@@ -52,6 +52,7 @@ var addCmd = &cobra.Command{
 		for {
 			date := prompt.Ask("Date?")
 			if date == "" {
+				fmt.Println("Abort.")
 				return
 			}
 
@@ -63,6 +64,13 @@ var addCmd = &cobra.Command{
 					Indent: false,
 				})
 				continue
+			}
+
+			// Parse date shortcuts
+			date, err := prompt.ParseDate(date)
+			if err != nil {
+				fmt.Println(err)
+				return
 			}
 
 			// Note
