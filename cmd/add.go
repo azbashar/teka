@@ -9,15 +9,26 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type Posting struct {
-	Account string
-	Amount  string
+type LineType int
+
+const (
+    LineTransaction LineType = iota
+    LinePosting
+    LineComment
+)
+
+type Line struct {
+    Type    LineType
+    Date    string // for LineTransaction
+    Note    string // for LineTransaction
+    Account string // for LinePosting
+    Amount  string // for LinePosting
+    Text    string // for LineComment
+    Indent  bool   // true for ';', false for '#'
 }
 
 type Transaction struct {
-	Date        string
-	Note string
-	Postings    []Posting
+    Lines []Line
 }
 
 var file string
@@ -36,26 +47,74 @@ var addCmd = &cobra.Command{
 		}
 		// Collect transaction data
 		tx := Transaction{}
-		tx.Date = prompt.Ask("Date?")
-		tx.Note = prompt.Ask("Note?")
-
+		
+		// Date
 		for {
-			acc := prompt.Ask("Account?")
-			// End transaction on empty account
-			if acc == "" {
+			date := prompt.Ask("Date?")
+			if date == "" {
+				return
+			}
+
+			if date == ";" || date == "#" {
+				comment := prompt.Ask("Comment?")
+				tx.Lines = append(tx.Lines, Line {
+					Type:   LineComment,
+					Text:   comment,
+					Indent: false,
+				})
+				continue
+			}
+
+			// Note
+			note := prompt.Ask("Note?")
+			tx.Lines = append(tx.Lines, Line {
+				Type: LineTransaction,
+				Date: date,
+				Note: note,
+			})
+			break
+		}
+
+		// Postings
+		for {
+			account := prompt.Ask("Account?")
+			if account == "" {
 				break
 			}
-			amt := prompt.Ask("Amount?")
-			tx.Postings = append(tx.Postings, Posting {
-				Account: acc,
-				Amount:  amt,
+
+			if account == ";" || account == "#" {
+				comment := prompt.Ask("Comment?")
+				tx.Lines = append(tx.Lines, Line {
+					Type:   LineComment,
+					Text:   comment,
+					Indent: account == ";",
+				})
+				continue
+			}
+
+			amount := prompt.Ask("Amount?")
+			tx.Lines = append(tx.Lines, Line {
+				Type:    LinePosting,
+				Account: account,
+				Amount:  amount,
 			})
 		}
 
 		// Format the transaction as text
-		content := fmt.Sprintf("\n%s %s\n", tx.Date, tx.Note)
-		for _, p := range tx.Postings {
-			content += fmt.Sprintf("    %-40s %s\n", p.Account, p.Amount)
+		content := "\n"
+		for _, line := range tx.Lines {
+			switch line.Type {
+				case LineComment:
+					if line.Indent {
+						content += "    " + line.Text + "\n"
+					} else {
+						content += line.Text + "\n"
+					}
+				case LineTransaction:
+					content += fmt.Sprintf("%s %s\n", line.Date, line.Note)
+				case LinePosting:
+					content += fmt.Sprintf("    %-20s %s\n", line.Account, line.Amount)
+			}
 		}
 
 		// Display the collected transaction
