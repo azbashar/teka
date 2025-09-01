@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/A-Bashar/Teka-Finance/internal/prompt"
 	"github.com/spf13/cobra"
@@ -90,6 +91,21 @@ var addCmd = &cobra.Command{
 				break
 			}
 
+			// Account search
+    		if strings.HasPrefix(account, ".") && len(account) > 1 {
+				searchTerm := account[1:]
+				selected, err := prompt.SearchAccounts(searchTerm, file)
+				if err != nil {
+					fmt.Println("Error searching accounts:", err)
+					continue
+				}
+				if selected == "" {
+					continue
+				}
+				account = selected
+			}
+
+			// Comment
 			if account == ";" || account == "#" {
 				comment := prompt.Ask("Comment?")
 				tx.Lines = append(tx.Lines, Line {
