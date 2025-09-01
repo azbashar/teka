@@ -1,12 +1,14 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
+	"time"
 
-	"github.com/A-Bashar/Teka-Finance/internal/prompt"
 	"github.com/spf13/cobra"
 )
 
@@ -51,14 +53,14 @@ var addCmd = &cobra.Command{
 		
 		// Date
 		for {
-			date := prompt.Ask("Date?")
+			date := Ask("Date?")
 			if date == "" {
 				fmt.Println("Abort.")
 				return
 			}
 
 			if date == ";" || date == "#" {
-				comment := prompt.Ask("Comment?")
+				comment := Ask("Comment?")
 				tx.Lines = append(tx.Lines, Line {
 					Type:   LineComment,
 					Text:   comment,
@@ -68,14 +70,14 @@ var addCmd = &cobra.Command{
 			}
 
 			// Parse date shortcuts
-			date, err := prompt.ParseDate(date)
+			date, err := ParseDate(date)
 			if err != nil {
 				fmt.Println(err)
 				return
 			}
 
 			// Note
-			note := prompt.Ask("Note?")
+			note := Ask("Note?")
 			tx.Lines = append(tx.Lines, Line {
 				Type: LineTransaction,
 				Date: date,
@@ -86,7 +88,7 @@ var addCmd = &cobra.Command{
 
 		// Postings
 		for {
-			account := prompt.Ask("Account?")
+			account := Ask("Account?")
 			if account == "" {
 				break
 			}
@@ -94,7 +96,7 @@ var addCmd = &cobra.Command{
 			// Account search
     		if strings.HasPrefix(account, ".") && len(account) > 1 {
 				searchTerm := account[1:]
-				selected, err := prompt.SearchAccounts(searchTerm, file)
+				selected, err := SearchAccounts(searchTerm, file)
 				if err != nil {
 					fmt.Println("Error searching accounts:", err)
 					continue
@@ -107,7 +109,7 @@ var addCmd = &cobra.Command{
 
 			// Comment
 			if account == ";" || account == "#" {
-				comment := prompt.Ask("Comment?")
+				comment := Ask("Comment?")
 				tx.Lines = append(tx.Lines, Line {
 					Type:   LineComment,
 					Text:   comment,
@@ -116,7 +118,7 @@ var addCmd = &cobra.Command{
 				continue
 			}
 
-			amount := prompt.Ask("Amount?")
+			amount := Ask("Amount?")
 			tx.Lines = append(tx.Lines, Line {
 				Type:    LinePosting,
 				Account: account,
@@ -146,7 +148,7 @@ var addCmd = &cobra.Command{
 		fmt.Printf("%s\n", content)
 
 		// Confirm before writing
-		if !prompt.Confirm("Is this correct") {
+		if !Confirm("Is this correct") {
 			fmt.Println("Transaction discarded.")
 			return
 		}
@@ -183,7 +185,7 @@ var addCmd = &cobra.Command{
 			fmt.Println("Error validating ledger:")
 			fmt.Println(string(out))
 
-			if prompt.Confirm("Do you want to revert the changes?") {
+			if Confirm("Do you want to revert the changes?") {
 				revertErr := os.Truncate(file, prevSize)
 				if revertErr != nil {
 					fmt.Printf("Error reverting changes: %v\n", revertErr)
@@ -198,6 +200,93 @@ var addCmd = &cobra.Command{
 			fmt.Println("Transaction added successfully.")
 		} 
 	},
+}
+
+// Prompt for data
+var reader = bufio.NewReader(os.Stdin)
+func Ask(question string) string {
+	fmt.Print(question + " ")
+	input, _ := reader.ReadString('\n')
+	return strings.TrimSpace(input)
+}
+
+// Yes no confirm prompt
+func Confirm(question string) bool {
+	answer := Ask(question + " (Y/n)?")
+	answer = strings.ToLower(strings.TrimSpace(answer))
+
+	// Empty answer defaults to yes
+	if answer == "" || answer == "y" || answer == "yes" {
+		return true
+	}
+	return false
+}
+
+// Parse shortcut dates
+func ParseDate(input string) (string, error) {
+	today := time.Now()
+	var d time.Time
+
+	switch input {
+	case ".":
+		d = today
+	case ".y":
+		d = today.AddDate(0, 0, -1)
+	case ".t":
+		d = today.AddDate(0, 0, 1)
+	default:
+		parsed, err := time.Parse("2006-01-02", input)
+		if err != nil {
+			return "", fmt.Errorf("invalid date format, please use YYYY-MM-DD or . for today, .y for yesterday, .t for tomorrow")
+		}
+		d = parsed
+	}
+	return d.Format("2006-01-02"), nil
+}
+
+// SearchAccounts runs hledger accounts and lets user pick by index or type account
+func SearchAccounts(searchTerm, file string) (string, error) {
+    var cmdArgs []string
+    if file != "" {
+        cmdArgs = []string{"accounts", "-f", file, searchTerm}
+    } else {
+        cmdArgs = []string{"accounts", searchTerm}
+    }
+
+    out, err := exec.Command("hledger", cmdArgs...).CombinedOutput()
+    if err != nil {
+        fmt.Println("Error running hledger accounts:", err)
+        return "", err
+    }
+
+    results := strings.Split(strings.TrimSpace(string(out)), "\n")
+    if len(results) == 0 || (len(results) == 1 && results[0] == "") {
+        fmt.Println("No accounts found.")
+        return "", nil
+    }
+
+    // Print indexed list
+    fmt.Println("Accounts found:")
+    for i, r := range results {
+        fmt.Printf("  %d) %s\n", i+1, r)
+    }
+
+    // Ask user to choose
+    reader := bufio.NewReader(os.Stdin)
+    fmt.Print("Select account (type index or full name): ")
+    choice, _ := reader.ReadString('\n')
+    choice = strings.TrimSpace(choice)
+
+    // Try parsing as index
+    num, err := strconv.Atoi(choice)
+    if err == nil {
+        if num >= 1 && num <= len(results) {
+            return results[num-1], nil
+        }
+    }
+
+    // Otherwise use input as account name
+    return choice, nil
 }
 
 func init() {
