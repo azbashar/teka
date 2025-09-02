@@ -10,6 +10,11 @@ import (
 
 type Config struct {
 	AmountColumn int `toml:"amount_column"`
+	Accounts struct {
+		ConversionAccount string `toml:"conversion"`
+		FXGainAccount string `toml:"fx_gain"`
+		FXLossAccount string `toml:"fx_loss"`
+	}`toml:"accounts"`
 }
 
 var Cfg Config
@@ -32,6 +37,15 @@ func LoadConfig() error {
 			// create default config if it doesnt exist
 			Cfg = Config{
 				AmountColumn: 40,
+				Accounts: struct {
+					ConversionAccount string `toml:"conversion"`
+					FXGainAccount     string `toml:"fx_gain"`
+					FXLossAccount     string `toml:"fx_loss"`
+				}{
+					ConversionAccount: "equity:conversion",
+					FXGainAccount:     "income:fx gain",
+					FXLossAccount:     "expenses:fx loss",
+				},
 			}
 			fmt.Println("No config file found.")
 			return SaveConfig(configFile)

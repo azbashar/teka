@@ -136,6 +136,16 @@ var addCmd = &cobra.Command{
 				account = selected
 			}
 
+			// Check if converting currencies
+			if strings.HasPrefix(account,"$") {
+				err := convertCurrencies(&tx, account)
+				if err != nil {
+					fmt.Println("Can not calculate gain:", err, "\nTry adding the transacion manually.")
+					return
+				}
+				break
+			}
+
 			// Comment
 			if account == ";" || account == "#" {
 				comment := Ask("Comment?")
@@ -180,7 +190,17 @@ var addCmd = &cobra.Command{
 				case LineTransaction:
 					content += fmt.Sprintf("%s %s\n", line.Date, line.Note)
 				case LinePosting:
-					content += fmt.Sprintf("    %-*s %s\n",config.Cfg.AmountColumn, line.Account, line.Amount)
+					// negative amounts will align with the posetive amounts
+					column := config.Cfg.AmountColumn
+					if strings.HasPrefix(line.Amount, "-") {
+						column = config.Cfg.AmountColumn - 1
+					}
+					content += fmt.Sprintf(
+						"    %-*s %s\n",
+						column,
+						line.Account, 
+						line.Amount,
+					)
 			}
 		}
 
@@ -357,7 +377,168 @@ func calculateBalanceAmount(tx *Transaction) (string, error) {
 	if currency == "" {
 		return "", fmt.Errorf("no amounts to balance")
 	}
-	return fmt.Sprintf("%.2f %s", -total, currency), nil
+	return fmt.Sprintf("%g %s", -total, currency), nil
+}
+
+// creates postings for currency conversion transactions
+func convertCurrencies(tx *Transaction, foreignAccount string) error {
+	foreignAccount = strings.TrimPrefix(foreignAccount, "$")
+	AskForeignAmount:
+		foreignAmount := Ask("Amount?")
+		foreignAmountValue,err := strconv.ParseFloat(strings.Split(foreignAmount, " ")[0], 64)
+		if err != nil {
+			fmt.Println("Invalid amount.")
+			goto AskForeignAmount
+		}
+		foreignCurrency := strings.Split(foreignAmount, " ")[1]
+
+	AskLocalAccount:
+		localAccount := Ask("Account?")
+		if localAccount == "" {
+			fmt.Println("Local account must be specified.")
+			goto AskLocalAccount
+		}
+		// Account search
+		if strings.HasPrefix(localAccount, ".") {
+			var searchTerm string
+			if localAccount == "." {
+				searchTerm = ""
+			} else {
+				searchTerm = localAccount[1:]
+			}
+			selected, err := SearchRecords("accounts",searchTerm, file)
+			if err != nil {
+				fmt.Println("Error searching accounts:", err)
+				goto AskLocalAccount
+			}
+			if selected == "" {
+				goto AskLocalAccount
+			}
+			localAccount = selected
+		}
+		// Comment
+		if localAccount == ";" || localAccount == "#" {
+			comment := Ask("Comment?")
+			tx.Lines = append(tx.Lines, Line {
+				Type:   LineComment,
+				Text:   comment,
+				Indent: localAccount == ";",
+			})
+			goto AskLocalAccount
+		}
+
+	AskLocalAmount:
+		localAmount := Ask("Amount?")
+		localAmountValue,err := strconv.ParseFloat(strings.Split(localAmount, " ")[0], 64)
+		if err != nil {
+			fmt.Println("Invalid amount.")
+			goto AskLocalAmount
+		}
+		localCurrency := strings.Split(localAmount, " ")[1]
+	
+	// Local to foreign conversion
+	if foreignAmountValue >= 0 {
+		tx.Lines = append(tx.Lines, Line {
+			Type:    LinePosting,
+			Account: foreignAccount,
+			Amount:  fmt.Sprintf("%s @@ %g %s", foreignAmount, localAmountValue*(-1), localCurrency),
+		})
+		tx.Lines = append(tx.Lines, Line {
+			Type:    LinePosting,
+			Account: localAccount,
+			Amount:  localAmount,
+		})
+		tx.Lines = append(tx.Lines, Line {
+			Type:    LinePosting,
+			Account: config.Cfg.Accounts.ConversionAccount,
+			Amount:  fmt.Sprintf("%g %s", foreignAmountValue*(-1), foreignCurrency),
+		})
+		tx.Lines = append(tx.Lines, Line {
+			Type:    LinePosting,
+			Account: config.Cfg.Accounts.ConversionAccount,
+			Amount:  fmt.Sprintf("%g %s", localAmountValue*(-1), localCurrency),
+		})
+	} else {
+		// Foreign to local conversion
+		totalForeignBalance, totalForeignValue, err := getForeignBalance(foreignAccount, file)
+		if err != nil {
+			return err
+		}
+
+		var convertedForeignValue float64
+		if -foreignAmountValue == totalForeignBalance {
+			convertedForeignValue = totalForeignValue
+		} else {
+			wac := totalForeignValue / totalForeignBalance
+			convertedForeignValue = (-foreignAmountValue) * wac
+		}
+
+		gainLoss := localAmountValue - convertedForeignValue
+		gainLossAcc := config.Cfg.Accounts.FXLossAccount
+		if gainLoss >= 0 {
+			gainLossAcc = config.Cfg.Accounts.FXGainAccount
+		}
+
+		tx.Lines = append(tx.Lines, Line{
+			Type:    LinePosting,
+			Account: foreignAccount,
+			Amount:  fmt.Sprintf("%s @@ %g %s", foreignAmount, convertedForeignValue, localCurrency),
+		})
+		tx.Lines = append(tx.Lines, Line{
+			Type:    LinePosting,
+			Account: localAccount,
+			Amount:  localAmount,
+		})
+		tx.Lines = append(tx.Lines, Line{
+			Type:    LinePosting,
+			Account: gainLossAcc,
+			Amount:  fmt.Sprintf("%g %s", -gainLoss, localCurrency),
+		})
+		tx.Lines = append(tx.Lines, Line{
+			Type:    LinePosting,
+			Account: config.Cfg.Accounts.ConversionAccount,
+			Amount:  fmt.Sprintf("%g %s", -convertedForeignValue, localCurrency),
+		})
+		tx.Lines = append(tx.Lines, Line{
+			Type:    LinePosting,
+			Account: config.Cfg.Accounts.ConversionAccount,
+			Amount:  fmt.Sprintf("%g %s", -foreignAmountValue, foreignCurrency),
+		})
+	}
+	return nil
+}
+
+// getForeignBalance runs hledger and returns (balance, valueAtCost)
+func getForeignBalance(account, file string) (float64, float64, error) {
+	// hledger bal account --file file
+	balCmd := exec.Command("hledger", "bal", account, "--file", file, "--no-total")
+	balOut, err := balCmd.Output()
+	if err != nil {
+		fmt.Println("Error running hledger balance:", err)
+		return 0, 0, err
+	}
+	balFields := strings.Fields(string(balOut))
+	var balance float64
+	if len(balFields) > 0 {
+		balance, _ = strconv.ParseFloat(balFields[0], 64)
+	} else {
+		return 0,0,fmt.Errorf("can not calculate gain from zero balance. %s has no balance", account)
+	}
+
+	// hledger bal account --file file --value=then --cost
+	valCmd := exec.Command("hledger", "bal", account, "--file", file, "--no-total", "--value=then", "--cost")
+	valOut, err := valCmd.Output()
+	if err != nil {
+		fmt.Println("Error running hledger value:", err)
+		return balance, 0, err
+	}
+	valFields := strings.Fields(string(valOut))
+	var value float64
+	if len(valFields) > 0 {
+		value, _ = strconv.ParseFloat(valFields[0], 64)
+	}
+
+	return balance, value, nil
 }
 
 func init() {
