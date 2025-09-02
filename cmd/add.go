@@ -59,6 +59,7 @@ var addCmd = &cobra.Command{
 				return
 			}
 
+			// Comment
 			if date == ";" || date == "#" {
 				comment := Ask("Comment?")
 				tx.Lines = append(tx.Lines, Line {
@@ -88,6 +89,7 @@ var addCmd = &cobra.Command{
 
 		// Postings
 		for {
+			// Account
 			account := Ask("Account?")
 			if account == "" {
 				break
@@ -118,7 +120,9 @@ var addCmd = &cobra.Command{
 				continue
 			}
 
-			amount := Ask("Amount?")
+			// Amount
+			amount := getAmount(tx)
+			
 			tx.Lines = append(tx.Lines, Line {
 				Type:    LinePosting,
 				Account: account,
@@ -287,6 +291,50 @@ func SearchAccounts(searchTerm, file string) (string, error) {
 
     // Otherwise use input as account name
     return choice, nil
+}
+
+func getAmount(tx Transaction) string {
+	amount := Ask("Amount?")
+	// Auto balance
+	if amount == "." {
+		bal, err := calculateBalanceAmount(&tx)
+		if err != nil {
+			fmt.Println("Error:", err)
+			bal = getAmount(tx)
+		}
+		amount = bal
+	}
+	return amount
+}
+
+// calculate balance amount
+func calculateBalanceAmount(tx *Transaction) (string, error) {
+	var total float64
+	var currency string
+
+	for _, l := range tx.Lines {
+		if l.Type != LinePosting || l.Amount == "" {
+			continue
+		}
+		parts := strings.Fields(l.Amount)
+		if len(parts) < 2 {
+			continue
+		}
+		val, err := strconv.ParseFloat(parts[0], 64)
+		if err != nil {
+			return "", fmt.Errorf("invalid number in %s", l.Amount)
+		}
+		if currency == "" {
+			currency = parts[1]
+		} else if parts[1] != currency {
+			return "", fmt.Errorf("mixed currencies not supported for auto-balance")
+		}
+		total += val
+	}
+	if currency == "" {
+		return "", fmt.Errorf("no amounts to balance")
+	}
+	return fmt.Sprintf("%.2f %s", -total, currency), nil
 }
 
 func init() {
