@@ -78,7 +78,28 @@ var addCmd = &cobra.Command{
 			}
 
 			// Note
-			note := Ask("Note?")
+			AskNote:
+				note := Ask("Note?") 
+
+				// Note search
+				if strings.HasPrefix(note, ".") {
+					var searchTerm string
+					if note == "." {
+						searchTerm = ""
+					} else {
+						searchTerm = note[1:]
+					}
+					selected, err := SearchRecords("notes",searchTerm, file)
+					if err != nil {
+						fmt.Println("Error searching notes:", err)
+						goto AskNote
+					}
+					if selected == "" {
+						goto AskNote
+					}
+					note = selected
+				}
+
 			tx.Lines = append(tx.Lines, Line {
 				Type: LineTransaction,
 				Date: date,
@@ -103,7 +124,7 @@ var addCmd = &cobra.Command{
 				} else {
 					searchTerm = account[1:]
 				}
-				selected, err := SearchAccounts(searchTerm, file)
+				selected, err := SearchRecords("accounts",searchTerm, file)
 				if err != nil {
 					fmt.Println("Error searching accounts:", err)
 					continue
@@ -126,7 +147,17 @@ var addCmd = &cobra.Command{
 			}
 
 			// Amount
-			amount := getAmount(tx)
+			AskAmount:
+				amount := Ask("Amount?")
+				// Auto balance
+				if amount == "." {
+					bal, err := calculateBalanceAmount(&tx)
+					if err != nil {
+						fmt.Println("Error:", err)
+						goto AskAmount
+					}
+					amount = bal
+				}
 			
 			tx.Lines = append(tx.Lines, Line {
 				Type:    LinePosting,
@@ -254,35 +285,35 @@ func ParseDate(input string) (string, error) {
 }
 
 // SearchAccounts runs hledger accounts and lets user pick by index or type account
-func SearchAccounts(searchTerm, file string) (string, error) {
+func SearchRecords(mode, searchTerm, file string) (string, error) {
     var cmdArgs []string
     if file != "" {
-        cmdArgs = []string{"accounts", "-f", file, searchTerm}
+        cmdArgs = []string{mode, "-f", file, searchTerm}
     } else {
-        cmdArgs = []string{"accounts", searchTerm}
+        cmdArgs = []string{mode, searchTerm}
     }
 
     out, err := exec.Command("hledger", cmdArgs...).CombinedOutput()
     if err != nil {
-        fmt.Println("Error running hledger accounts:", err)
+        fmt.Println("Error running hledger:", err)
         return "", err
     }
 
     results := strings.Split(strings.TrimSpace(string(out)), "\n")
     if len(results) == 0 || (len(results) == 1 && results[0] == "") {
-        fmt.Println("No accounts found.")
+        fmt.Println("No " + mode + " found.")
         return "", nil
     }
 
     // Print indexed list
-    fmt.Println("Accounts found:")
+    fmt.Println("Following " + mode + " found:")
     for i, r := range results {
         fmt.Printf("  %d) %s\n", i+1, r)
     }
 
     // Ask user to choose
     reader := bufio.NewReader(os.Stdin)
-    fmt.Print("Select account (type index or full name): ")
+    fmt.Print("Select " + strings.TrimSuffix(mode, "s") + " (type index or full name): ")
     choice, _ := reader.ReadString('\n')
     choice = strings.TrimSpace(choice)
 
@@ -296,20 +327,6 @@ func SearchAccounts(searchTerm, file string) (string, error) {
 
     // Otherwise use input as account name
     return choice, nil
-}
-
-func getAmount(tx Transaction) string {
-	amount := Ask("Amount?")
-	// Auto balance
-	if amount == "." {
-		bal, err := calculateBalanceAmount(&tx)
-		if err != nil {
-			fmt.Println("Error:", err)
-			bal = getAmount(tx)
-		}
-		amount = bal
-	}
-	return amount
 }
 
 // calculate balance amount

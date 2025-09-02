@@ -30,3 +30,7 @@
 2025-02-08 Hagu korar fee
     assets:cash                              -10 BDT
     expenses:healt                           10 BDT
+
+2025-09-02 Salary
+    assets:bank          50 BDT
+    income:misc          -50.00 BDT
