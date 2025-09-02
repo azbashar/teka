@@ -1,0 +1,58 @@
+package config
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+
+	"github.com/pelletier/go-toml/v2"
+)
+
+type Config struct {
+	AmountColumn int `toml:"amount_column"`
+}
+
+var Cfg Config
+
+// Load config into Cfg
+func LoadConfig() error {
+	// Look for config in user folder
+	confPath, err := os.UserConfigDir()
+	if err != nil {
+		return fmt.Errorf("failed to get executable path: %w", err)
+	}
+	confPath = filepath.Join(confPath, "teka")
+	_ = os.Mkdir(confPath, 0700) // create if it doesnt exist
+	configFile := filepath.Join(confPath, "tekaconf.toml")
+
+	// Read config file
+	data, err := os.ReadFile(configFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// create default config if it doesnt exist
+			Cfg = Config{
+				AmountColumn: 40,
+			}
+			fmt.Println("No config file found.")
+			return SaveConfig(configFile)
+		}
+		return err
+	}
+
+	if err := toml.Unmarshal(data, &Cfg); err != nil {
+		return fmt.Errorf("invalid config file.\nfailed to parse file: %w", err)
+	}
+
+	return nil
+}
+
+// Save current Cfg into config file
+func SaveConfig(configFile string) error {
+	data, err := toml.Marshal(Cfg)
+	if err != nil {
+		return fmt.Errorf("failed to marshal config: %w", err)
+	}
+	
+	fmt.Println("Creating config file in: "+configFile)
+	return os.WriteFile(configFile, data, 0644)
+}

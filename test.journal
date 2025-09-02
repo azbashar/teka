@@ -34,3 +34,11 @@
 2025-09-02 Salary
     assets:bank          50 BDT
     income:misc          -50.00 BDT
+
+2025-09-02 Chanda
+    assets:cash                              500 BDT
+    income:misc                              -500.00 BDT
+
+2025-09-02 Buy groceries
+    assets:bank 500 BDT
+    income:freelance -500.00 BDT

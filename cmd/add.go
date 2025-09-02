@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/A-Bashar/Teka-Finance/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -179,7 +180,7 @@ var addCmd = &cobra.Command{
 				case LineTransaction:
 					content += fmt.Sprintf("%s %s\n", line.Date, line.Note)
 				case LinePosting:
-					content += fmt.Sprintf("    %-20s %s\n", line.Account, line.Amount)
+					content += fmt.Sprintf("    %-*s %s\n",config.Cfg.AmountColumn, line.Account, line.Amount)
 			}
 		}
 
