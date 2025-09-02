@@ -96,8 +96,13 @@ var addCmd = &cobra.Command{
 			}
 
 			// Account search
-    		if strings.HasPrefix(account, ".") && len(account) > 1 {
-				searchTerm := account[1:]
+    		if strings.HasPrefix(account, ".") {
+				var searchTerm string
+				if account == "." {
+					searchTerm = ""
+				} else {
+					searchTerm = account[1:]
+				}
 				selected, err := SearchAccounts(searchTerm, file)
 				if err != nil {
 					fmt.Println("Error searching accounts:", err)
@@ -285,7 +290,7 @@ func SearchAccounts(searchTerm, file string) (string, error) {
     num, err := strconv.Atoi(choice)
     if err == nil {
         if num >= 1 && num <= len(results) {
-            return results[num-1], nil
+            return strings.TrimSpace(results[num-1]), nil
         }
     }
 
