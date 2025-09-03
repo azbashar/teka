@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/A-Bashar/Teka-Finance/internal/config"
+	"github.com/A-Bashar/Teka-Finance/internal/efficientfiles"
 	"github.com/spf13/cobra"
 )
 
@@ -36,6 +37,7 @@ type Transaction struct {
 }
 
 var file string
+var noFileArg = false
 
 var addCmd = &cobra.Command{
 	Use:   "add",
@@ -43,12 +45,16 @@ var addCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Get ledger file from ENV if not provided
 		if file == "" {
+			noFileArg = true
+		}
+		if noFileArg && !config.Cfg.EfficientFileStructure.Enabled {
 			file = os.Getenv("LEDGER_FILE")
 			if file == "" {
 				fmt.Println("No ledger file specified. Use --file flag or set LEDGER_FILE environment variable.")
 				return
 			}
 		}
+		file = "-f "+ file
 		// Collect transaction data
 		tx := Transaction{}
 		
@@ -76,6 +82,14 @@ var addCmd = &cobra.Command{
 			if err != nil {
 				fmt.Println(err)
 				return
+			}
+
+			if noFileArg && config.Cfg.EfficientFileStructure.Enabled {
+				file, err = efficientfiles.GetCurrentFile(date)
+				if err != nil {
+					fmt.Printf("Efficient file finder error: %v", err)
+					return
+				}
 			}
 
 			// Note
@@ -223,7 +237,7 @@ var addCmd = &cobra.Command{
 
 
 		// Save transaction to file
-		f, err := os.OpenFile(file, os.O_APPEND|os.O_WRONLY, 0644)
+		f, err := os.OpenFile(strings.TrimPrefix(file,"-f "), os.O_APPEND|os.O_WRONLY, 0644)
 		if err != nil {
 			fmt.Printf("Error opening file: %v\n", err)
 			return
@@ -239,7 +253,7 @@ var addCmd = &cobra.Command{
 		// Validate changes
 		cmdArgs := []string{"check"}
 		if file != "" {
-			cmdArgs = append(cmdArgs, "-f", file)
+			cmdArgs = append(cmdArgs, file)
 		}
 		out, err := exec.Command("hledger", cmdArgs...).CombinedOutput()
 		if err != nil {
@@ -247,7 +261,7 @@ var addCmd = &cobra.Command{
 			fmt.Println(string(out))
 
 			if Confirm("Do you want to revert the changes?") {
-				revertErr := os.Truncate(file, prevSize)
+				revertErr := os.Truncate(strings.TrimPrefix(file, "-f "), prevSize)
 				if revertErr != nil {
 					fmt.Printf("Error reverting changes: %v\n", revertErr)
 				} else {
@@ -264,8 +278,8 @@ var addCmd = &cobra.Command{
 }
 
 // Prompt for data
-var reader = bufio.NewReader(os.Stdin)
 func Ask(question string) string {
+	reader := bufio.NewReader(os.Stdin)
 	fmt.Print(question + " ")
 	input, _ := reader.ReadString('\n')
 	return strings.TrimSpace(input)
@@ -307,9 +321,12 @@ func ParseDate(input string) (string, error) {
 
 // SearchAccounts runs hledger accounts and lets user pick by index or type account
 func SearchRecords(mode, searchTerm, file string) (string, error) {
+	if noFileArg && config.Cfg.EfficientFileStructure.Enabled {
+		file = efficientfiles.GetMainFile()
+	}
     var cmdArgs []string
     if file != "" {
-        cmdArgs = []string{mode, "-f", file, searchTerm}
+        cmdArgs = []string{mode, searchTerm, file}
     } else {
         cmdArgs = []string{mode, searchTerm}
     }
@@ -510,6 +527,9 @@ func convertCurrencies(tx *Transaction, foreignAccount string) error {
 
 // getForeignBalance runs hledger and returns (balance, valueAtCost)
 func getForeignBalance(account, file string) (float64, float64, error) {
+	if noFileArg && config.Cfg.EfficientFileStructure.Enabled {
+		file = efficientfiles.GetMainFile()
+	}
 	// hledger bal account --file file
 	balCmd := exec.Command("hledger", "bal", account, "--file", file, "--no-total")
 	balOut, err := balCmd.Output()

@@ -15,6 +15,10 @@ type Config struct {
 		FXGainAccount string `toml:"fx_gain"`
 		FXLossAccount string `toml:"fx_loss"`
 	}`toml:"accounts"`
+	EfficientFileStructure struct {
+		Enabled bool `toml:"enable"`
+		FilesRoot string `toml:"files_root"`
+	} `toml:"efficient_file_structure"`
 }
 
 var Cfg Config
@@ -45,6 +49,13 @@ func LoadConfig() error {
 					ConversionAccount: "equity:conversion",
 					FXGainAccount:     "income:fx gain",
 					FXLossAccount:     "expenses:fx loss",
+				},
+				EfficientFileStructure: struct {
+					Enabled bool `toml:"enable"`
+					FilesRoot string `toml:"files_root"`
+				} {
+					Enabled: false,
+					FilesRoot: "~/finance/",
 				},
 			}
 			fmt.Println("No config file found.")
