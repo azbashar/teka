@@ -28,10 +28,10 @@ func LoadConfig() error {
 	// Look for config in user folder
 	confPath, err := os.UserConfigDir()
 	if err != nil {
-		return fmt.Errorf("failed to get executable path: %w", err)
+		return fmt.Errorf("failed to get config path: %w", err)
 	}
 	confPath = filepath.Join(confPath, "teka")
-	_ = os.Mkdir(confPath, 0700) // create if it doesnt exist
+	_ = os.MkdirAll(confPath, 0700) // create if it doesnt exist
 	configFile := filepath.Join(confPath, "tekaconf.toml")
 
 	// Read config file
