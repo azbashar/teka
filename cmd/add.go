@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -10,7 +11,7 @@ import (
 	"time"
 
 	"github.com/A-Bashar/Teka-Finance/internal/config"
-	"github.com/A-Bashar/Teka-Finance/internal/efficientfiles"
+	"github.com/A-Bashar/Teka-Finance/internal/fileselector"
 	"github.com/spf13/cobra"
 )
 
@@ -36,36 +37,27 @@ type Transaction struct {
     Lines []Line
 }
 
-var file string
-var noFileArg = false
+var fileArg string
+var mainFileArg string
+var currentFile string
 
 var addCmd = &cobra.Command{
-	Use:   "add",
+	Use: "add",
 	Short: "Add a new transaction to your ledger",
 	Run: func(cmd *cobra.Command, args []string) {
-		// Get ledger file from ENV if not provided
-		if file == "" {
-			noFileArg = true
-		}
-		if noFileArg && !config.Cfg.EfficientFileStructure.Enabled {
-			file = os.Getenv("LEDGER_FILE")
-			if file == "" {
-				fmt.Println("No ledger file specified. Use --file flag or set LEDGER_FILE environment variable.")
-				return
-			}
-		}
-		file = "-f "+ file
+		fileArg = rootCmd.Flag("file").Value.String()
+		mainFileArg = rootCmd.Flag("mainfile").Value.String()
 		// Collect transaction data
 		tx := Transaction{}
-		
+
 		// Date
-		for {
+		AskDate:
 			date := Ask("Date?")
 			if date == "" {
 				fmt.Println("Abort.")
 				return
 			}
-
+			
 			// Comment
 			if date == ";" || date == "#" {
 				comment := Ask("Comment?")
@@ -74,7 +66,7 @@ var addCmd = &cobra.Command{
 					Text:   comment,
 					Indent: false,
 				})
-				continue
+				goto AskDate
 			}
 
 			// Parse date shortcuts
@@ -84,45 +76,41 @@ var addCmd = &cobra.Command{
 				return
 			}
 
-			if noFileArg && config.Cfg.EfficientFileStructure.Enabled {
-				file, err = efficientfiles.GetCurrentFile(date)
-				if err != nil {
-					fmt.Printf("Efficient file finder error: %v", err)
-					return
-				}
-			}
-
-			// Note
-			AskNote:
-				note := Ask("Note?") 
-
-				// Note search
-				if strings.HasPrefix(note, ".") {
-					var searchTerm string
-					if note == "." {
-						searchTerm = ""
-					} else {
-						searchTerm = note[1:]
-					}
-					selected, err := SearchRecords("notes",searchTerm, file)
-					if err != nil {
-						fmt.Println("Error searching notes:", err)
-						goto AskNote
-					}
-					if selected == "" {
-						goto AskNote
-					}
-					note = selected
-				}
-
-			tx.Lines = append(tx.Lines, Line {
-				Type: LineTransaction,
-				Date: date,
-				Note: note,
-			})
-			break
+		currentFile, err = fileselector.GetCurrentFile(date, fileArg)
+		if err != nil {
+			fmt.Println(err)
+			return
 		}
 
+		// Note
+		AskNote:
+			note := Ask("Note?")
+
+			// Note search
+			if strings.HasPrefix(note, ".") {
+				var searchTerm string
+				if note == "." {
+					searchTerm = ""
+				} else {
+					searchTerm = note[1:]
+				}
+				selected, err := SearchRecords("notes",searchTerm)
+				if err != nil {
+					fmt.Println("Error searching notes:", err)
+					goto AskNote
+				}
+				if selected == "" {
+					goto AskNote
+				}
+				note = selected
+			}
+
+		tx.Lines = append(tx.Lines, Line {
+			Type: LineTransaction,
+			Date: date,
+			Note: note,
+		})
+		
 		// Postings
 		for {
 			// Account
@@ -132,14 +120,14 @@ var addCmd = &cobra.Command{
 			}
 
 			// Account search
-    		if strings.HasPrefix(account, ".") {
+			if strings.HasPrefix(account, ".") {
 				var searchTerm string
 				if account == "." {
 					searchTerm = ""
 				} else {
 					searchTerm = account[1:]
 				}
-				selected, err := SearchRecords("accounts",searchTerm, file)
+				selected, err := SearchRecords("accounts",searchTerm)
 				if err != nil {
 					fmt.Println("Error searching accounts:", err)
 					continue
@@ -178,7 +166,7 @@ var addCmd = &cobra.Command{
 				if amount == "." {
 					bal, err := calculateBalanceAmount(&tx)
 					if err != nil {
-						fmt.Println("Error:", err)
+						fmt.Println("Error balancing transaction:", err)
 						goto AskAmount
 					}
 					amount = bal
@@ -219,7 +207,7 @@ var addCmd = &cobra.Command{
 		}
 
 		// Display the collected transaction
-		fmt.Printf("\nAdding this following transaction to %s:\n", file)
+		fmt.Printf("\nAdding this following transaction to %s:\n", currentFile)
 		fmt.Printf("%s\n", content)
 
 		// Confirm before writing
@@ -229,7 +217,7 @@ var addCmd = &cobra.Command{
 		}
 
 		// Store previous state for potential revert
-		info, err := os.Stat(file)
+		info, err := os.Stat(currentFile)
 		prevSize := int64(0)
 		if err == nil {
 			prevSize = info.Size()
@@ -237,7 +225,7 @@ var addCmd = &cobra.Command{
 
 
 		// Save transaction to file
-		f, err := os.OpenFile(strings.TrimPrefix(file,"-f "), os.O_APPEND|os.O_WRONLY, 0644)
+		f, err := os.OpenFile(currentFile, os.O_APPEND|os.O_WRONLY, 0644)
 		if err != nil {
 			fmt.Printf("Error opening file: %v\n", err)
 			return
@@ -250,18 +238,16 @@ var addCmd = &cobra.Command{
 		}
 		fmt.Println("Validating transaction...")
 		f.Close()
+
 		// Validate changes
-		cmdArgs := []string{"check"}
-		if file != "" {
-			cmdArgs = append(cmdArgs, file)
-		}
+		cmdArgs := []string{"check", "-f", currentFile}
 		out, err := exec.Command("hledger", cmdArgs...).CombinedOutput()
 		if err != nil {
 			fmt.Println("Error validating ledger:")
 			fmt.Println(string(out))
 
 			if Confirm("Do you want to revert the changes?") {
-				revertErr := os.Truncate(strings.TrimPrefix(file, "-f "), prevSize)
+				revertErr := os.Truncate(currentFile, prevSize)
 				if revertErr != nil {
 					fmt.Printf("Error reverting changes: %v\n", revertErr)
 				} else {
@@ -273,7 +259,7 @@ var addCmd = &cobra.Command{
 			}
 		} else {
 			fmt.Println("Transaction added successfully.")
-		} 
+		}
 	},
 }
 
@@ -319,38 +305,34 @@ func ParseDate(input string) (string, error) {
 	return d.Format("2006-01-02"), nil
 }
 
-// SearchAccounts runs hledger accounts and lets user pick by index or type account
-func SearchRecords(mode, searchTerm, file string) (string, error) {
-	if noFileArg && config.Cfg.EfficientFileStructure.Enabled {
-		file = efficientfiles.GetMainFile()
+func SearchRecords(mode, searchTerm string) (string, error) {
+	mainFile, err := fileselector.GetMainFile(fileArg,mainFileArg)
+	if err != nil {
+		return "", err
 	}
-    var cmdArgs []string
-    if file != "" {
-        cmdArgs = []string{mode, searchTerm, file}
-    } else {
-        cmdArgs = []string{mode, searchTerm}
-    }
 
-    out, err := exec.Command("hledger", cmdArgs...).CombinedOutput()
-    if err != nil {
-        fmt.Println("Error running hledger:", err)
-        return "", err
-    }
+	cmdArgs := []string{mode, searchTerm, "-f", mainFile}
 
-    results := strings.Split(strings.TrimSpace(string(out)), "\n")
-    if len(results) == 0 || (len(results) == 1 && results[0] == "") {
-        fmt.Println("No " + mode + " found.")
-        return "", nil
-    }
+	out, err := exec.Command("hledger", cmdArgs...).CombinedOutput()
+	if err != nil {
+		fmt.Println(string(out))
+		return "", err
+	}
 
-    // Print indexed list
-    fmt.Println("Following " + mode + " found:")
-    for i, r := range results {
-        fmt.Printf("  %d) %s\n", i+1, r)
-    }
+	results := strings.Split(strings.TrimSpace(string(out)), "\n")
+	if len(results) == 0 || (len(results) == 1 && results[0] == "") {
+		fmt.Println("No " + mode + " found.")
+		return "", nil
+	}
 
-    // Ask user to choose
-    reader := bufio.NewReader(os.Stdin)
+	// Print indexed list
+	fmt.Println("Following " + mode + " found:")
+	for i, r := range results {
+		fmt.Printf("  %d) %s\n", i+1, r)
+	}
+
+	// Ask user to choose
+	reader := bufio.NewReader(os.Stdin)
     fmt.Print("Select " + strings.TrimSuffix(mode, "s") + " (type index or full name): ")
     choice, _ := reader.ReadString('\n')
     choice = strings.TrimSpace(choice)
@@ -367,36 +349,6 @@ func SearchRecords(mode, searchTerm, file string) (string, error) {
     return choice, nil
 }
 
-// calculate balance amount
-func calculateBalanceAmount(tx *Transaction) (string, error) {
-	var total float64
-	var currency string
-
-	for _, l := range tx.Lines {
-		if l.Type != LinePosting || l.Amount == "" {
-			continue
-		}
-		parts := strings.Fields(l.Amount)
-		if len(parts) < 2 {
-			continue
-		}
-		val, err := strconv.ParseFloat(parts[0], 64)
-		if err != nil {
-			return "", fmt.Errorf("invalid number in %s", l.Amount)
-		}
-		if currency == "" {
-			currency = parts[1]
-		} else if parts[1] != currency {
-			return "", fmt.Errorf("mixed currencies not supported for auto-balance")
-		}
-		total += val
-	}
-	if currency == "" {
-		return "", fmt.Errorf("no amounts to balance")
-	}
-	return fmt.Sprintf("%g %s", -total, currency), nil
-}
-
 // creates postings for currency conversion transactions
 func convertCurrencies(tx *Transaction, foreignAccount string) error {
 	foreignAccount = strings.TrimPrefix(foreignAccount, "$")
@@ -404,7 +356,7 @@ func convertCurrencies(tx *Transaction, foreignAccount string) error {
 		foreignAmount := Ask("Amount?")
 		foreignAmountValue,err := strconv.ParseFloat(strings.Split(foreignAmount, " ")[0], 64)
 		if err != nil {
-			fmt.Println("Invalid amount.")
+			fmt.Println("Invalid amount: ", err)
 			goto AskForeignAmount
 		}
 		foreignCurrency := strings.Split(foreignAmount, " ")[1]
@@ -412,7 +364,7 @@ func convertCurrencies(tx *Transaction, foreignAccount string) error {
 	AskLocalAccount:
 		localAccount := Ask("Account?")
 		if localAccount == "" {
-			fmt.Println("Local account must be specified.")
+			fmt.Println("Local account must be specified when converting currencies.")
 			goto AskLocalAccount
 		}
 		// Account search
@@ -423,7 +375,7 @@ func convertCurrencies(tx *Transaction, foreignAccount string) error {
 			} else {
 				searchTerm = localAccount[1:]
 			}
-			selected, err := SearchRecords("accounts",searchTerm, file)
+			selected, err := SearchRecords("accounts",searchTerm)
 			if err != nil {
 				fmt.Println("Error searching accounts:", err)
 				goto AskLocalAccount
@@ -448,7 +400,7 @@ func convertCurrencies(tx *Transaction, foreignAccount string) error {
 		localAmount := Ask("Amount?")
 		localAmountValue,err := strconv.ParseFloat(strings.Split(localAmount, " ")[0], 64)
 		if err != nil {
-			fmt.Println("Invalid amount.")
+			fmt.Println("Invalid amount:", err)
 			goto AskLocalAmount
 		}
 		localCurrency := strings.Split(localAmount, " ")[1]
@@ -477,17 +429,18 @@ func convertCurrencies(tx *Transaction, foreignAccount string) error {
 		})
 	} else {
 		// Foreign to local conversion
-		totalForeignBalance, totalForeignValue, err := getForeignBalance(foreignAccount, file)
+		totalForeignBalance, totalForeignValue, err := getForeignBalance(foreignAccount)
 		if err != nil {
 			return err
 		}
 
 		var convertedForeignValue float64
+		// convert full balance without rounding error
 		if -foreignAmountValue == totalForeignBalance {
 			convertedForeignValue = totalForeignValue
-		} else {
-			wac := totalForeignValue / totalForeignBalance
-			convertedForeignValue = (-foreignAmountValue) * wac
+		} else { // partial amount conversion
+			weightedAverageCost := totalForeignValue / totalForeignBalance
+			convertedForeignValue = (-foreignAmountValue) * weightedAverageCost
 		}
 
 		gainLoss := localAmountValue - convertedForeignValue
@@ -525,16 +478,17 @@ func convertCurrencies(tx *Transaction, foreignAccount string) error {
 	return nil
 }
 
-// getForeignBalance runs hledger and returns (balance, valueAtCost)
-func getForeignBalance(account, file string) (float64, float64, error) {
-	if noFileArg && config.Cfg.EfficientFileStructure.Enabled {
-		file = efficientfiles.GetMainFile()
+func getForeignBalance(account string) (float64, float64, error) {
+	mainFile, err := fileselector.GetMainFile(fileArg,mainFileArg)
+	if err != nil {
+		return 0, 0, err
 	}
+
+	// get balance in foreign currency
 	// hledger bal account --file file
-	balCmd := exec.Command("hledger", "bal", account, "--file", file, "--no-total")
+	balCmd := exec.Command("hledger", "bal", account, "-f", currentFile, "--no-total")
 	balOut, err := balCmd.Output()
 	if err != nil {
-		fmt.Println("Error running hledger balance:", err)
 		return 0, 0, err
 	}
 	balFields := strings.Fields(string(balOut))
@@ -542,14 +496,15 @@ func getForeignBalance(account, file string) (float64, float64, error) {
 	if len(balFields) > 0 {
 		balance, _ = strconv.ParseFloat(balFields[0], 64)
 	} else {
-		return 0,0,fmt.Errorf("can not calculate gain from zero balance. %s has no balance", account)
+		fmt.Println(account, "has no balance.")
+		return 0,0,errors.New("can not calculate gain from zero balance.")
 	}
 
+	// get value of foreign balance in local currency
 	// hledger bal account --file file --value=then --cost
-	valCmd := exec.Command("hledger", "bal", account, "--file", file, "--no-total", "--value=then", "--cost")
+	valCmd := exec.Command("hledger", "bal", account, "-f", mainFile, "--no-total", "--value=then", "--cost")
 	valOut, err := valCmd.Output()
 	if err != nil {
-		fmt.Println("Error running hledger value:", err)
 		return balance, 0, err
 	}
 	valFields := strings.Fields(string(valOut))
@@ -561,7 +516,41 @@ func getForeignBalance(account, file string) (float64, float64, error) {
 	return balance, value, nil
 }
 
+func calculateBalanceAmount(tx *Transaction) (string, error) {
+	var total float64
+	var currency string
+
+	for _, l := range tx.Lines {
+		if l.Type != LinePosting {
+			continue
+		}
+		if l.Amount == "" {
+			return "", errors.New("can not balance if postings are missing amount")
+		}
+		parts := strings.Fields(l.Amount)
+		if len(parts) < 2 {
+			return "", errors.New("invalid amount format. Only acceptable format is 1000.00 CUR")
+		}
+		val, err := strconv.ParseFloat(parts[0], 64)
+		if err != nil {
+			return "", errors.New("invalid number in " + l.Amount)
+		}
+		if currency == "" {
+			currency = parts[1]
+		}
+		if parts[1] != currency {
+			return "", errors.New("mixed currencies not supported for auto-balance")
+		}
+		total += val
+	}
+	if currency == "" {
+		return "", errors.New("no amounts to balance")
+	}
+	return fmt.Sprintf("%g %s", -total, currency), nil
+}
+
+
+
 func init() {
 	rootCmd.AddCommand(addCmd)
-	addCmd.Flags().StringVarP(&file, "file", "f", "", "Ledger file to write to")
 }

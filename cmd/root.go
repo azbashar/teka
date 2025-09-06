@@ -13,6 +13,8 @@ var rootCmd = &cobra.Command{
 }
 
 func Execute() {
+	rootCmd.PersistentFlags().StringP("file", "f", "", "Ledger file to write to")
+	rootCmd.PersistentFlags().StringP("mainfile", "m", "", "Main file to write to")
 	if err := rootCmd.Execute(); err != nil {
 		// fmt.Println(err)
 		os.Exit(1)
