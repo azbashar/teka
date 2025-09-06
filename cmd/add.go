@@ -37,16 +37,12 @@ type Transaction struct {
     Lines []Line
 }
 
-var fileArg string
-var mainFileArg string
 var currentFile string
 
 var addCmd = &cobra.Command{
 	Use: "add",
 	Short: "Add a new transaction to your ledger",
 	Run: func(cmd *cobra.Command, args []string) {
-		fileArg = rootCmd.Flag("file").Value.String()
-		mainFileArg = rootCmd.Flag("mainfile").Value.String()
 		// Collect transaction data
 		tx := Transaction{}
 
@@ -497,7 +493,7 @@ func getForeignBalance(account string) (float64, float64, error) {
 		balance, _ = strconv.ParseFloat(balFields[0], 64)
 	} else {
 		fmt.Println(account, "has no balance.")
-		return 0,0,errors.New("can not calculate gain from zero balance.")
+		return 0,0,errors.New("can not calculate gain from zero balance")
 	}
 
 	// get value of foreign balance in local currency

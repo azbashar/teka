@@ -3,9 +3,11 @@ package fileselector
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"math"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/A-Bashar/Teka-Finance/internal/config"
@@ -48,6 +50,48 @@ func GetRequiredFiles(start, end, file string) ([]string, error) {
 				return []string{}, errors.New("no ledger file specified")
 			}
 		return []string{file}, nil
+	}
+
+	if end == "" || start == "" {
+		files, err := ioutil.ReadDir(GetRootDir())
+		if err != nil {
+			return []string{}, err
+		}
+		
+		var minYear, maxYear int
+		first := true
+
+		for _, f := range files {
+			if f.IsDir() {
+				year, err := strconv.Atoi(f.Name())
+				if err != nil {
+					// skip folders that aren’t numeric years
+					continue
+				}
+				if first {
+					minYear, maxYear = year, year
+					first = false
+				} else {
+					if year < minYear {
+						minYear = year
+					}
+					if year > maxYear {
+						maxYear = year
+					}
+				}
+			}
+		}
+
+		if first {
+			return []string{}, errors.New("no valid year folders found")
+		} else {
+			if start == "" {
+				start = strconv.Itoa(minYear)+"-01-01"
+			}
+			if end == "" {
+				end = strconv.Itoa(maxYear)+"-12-31"
+			}
+		}
 	}
 
 	startDate, err := time.Parse("2006-01-02", start)
