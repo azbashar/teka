@@ -5,57 +5,61 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/pelletier/go-toml/v2"
+	"gopkg.in/yaml.v3"
 )
 
+type Accounts struct {
+	ConversionAccount string `yaml:"conversion"`
+	FXGainAccount     string `yaml:"fx_gain"`
+	FXLossAccount     string `yaml:"fx_loss"`
+}
+
+type EfficientFileStructure struct {
+	Enabled   bool   `yaml:"enable"`
+	FilesRoot string `yaml:"files_root"`
+}
+
+type StarredAccount struct {
+	DisplayName string `yaml:"display_name"`
+	Account     string `yaml:"account"`
+}
+
 type Config struct {
-	AmountColumn int `toml:"amount_column"`
-	Accounts struct {
-		ConversionAccount string `toml:"conversion"`
-		FXGainAccount string `toml:"fx_gain"`
-		FXLossAccount string `toml:"fx_loss"`
-	}`toml:"accounts"`
-	EfficientFileStructure struct {
-		Enabled bool `toml:"enable"`
-		FilesRoot string `toml:"files_root"`
-	} `toml:"efficient_file_structure"`
+	AmountColumn           int                    `yaml:"amount_column"`
+	Accounts               Accounts               `yaml:"accounts"`
+	EfficientFileStructure EfficientFileStructure `yaml:"efficient_file_structure"`
+	StarredAccounts        []StarredAccount       `yaml:"starred_accounts"`
 }
 
 var Cfg Config
 
-// Load config into Cfg
 func LoadConfig() error {
-	// Look for config in user folder
 	confPath, err := os.UserConfigDir()
 	if err != nil {
 		return fmt.Errorf("failed to get config path: %w", err)
 	}
 	confPath = filepath.Join(confPath, "teka")
-	_ = os.MkdirAll(confPath, 0700) // create if it doesnt exist
-	configFile := filepath.Join(confPath, "tekaconf.toml")
+	_ = os.MkdirAll(confPath, 0700)
+	configFile := filepath.Join(confPath, "tekaconf.yaml")
 
-	// Read config file
 	data, err := os.ReadFile(configFile)
 	if err != nil {
 		if os.IsNotExist(err) {
-			// create default config if it doesnt exist
+			// create default config if it doesn't exist
 			Cfg = Config{
 				AmountColumn: 40,
-				Accounts: struct {
-					ConversionAccount string `toml:"conversion"`
-					FXGainAccount     string `toml:"fx_gain"`
-					FXLossAccount     string `toml:"fx_loss"`
-				}{
+				Accounts: Accounts{
 					ConversionAccount: "equity:conversion",
 					FXGainAccount:     "income:fx gain",
 					FXLossAccount:     "expenses:fx loss",
 				},
-				EfficientFileStructure: struct {
-					Enabled bool `toml:"enable"`
-					FilesRoot string `toml:"files_root"`
-				} {
-					Enabled: false,
+				EfficientFileStructure: EfficientFileStructure{
+					Enabled:   false,
 					FilesRoot: "~/finance/",
+				},
+				StarredAccounts: []StarredAccount{
+					{DisplayName: "Cash Wallet", Account: "assets:cash"},
+					{DisplayName: "Bank", Account: "assets:bank"},
 				},
 			}
 			fmt.Println("No config file found.")
@@ -64,20 +68,19 @@ func LoadConfig() error {
 		return err
 	}
 
-	if err := toml.Unmarshal(data, &Cfg); err != nil {
+	if err := yaml.Unmarshal(data, &Cfg); err != nil {
 		return fmt.Errorf("invalid config file.\nfailed to parse file: %w", err)
 	}
 
 	return nil
 }
 
-// Save current Cfg into config file
 func SaveConfig(configFile string) error {
-	data, err := toml.Marshal(Cfg)
+	data, err := yaml.Marshal(Cfg)
 	if err != nil {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
-	
-	fmt.Println("Creating config file in: "+configFile)
+
+	fmt.Println("Creating config file in: " + configFile)
 	return os.WriteFile(configFile, data, 0644)
 }
