@@ -36,18 +36,20 @@ export default async function Home() {
           </TooltipContent>
         </Tooltip>
       </div>
-      <div className="flex gap-2 flex-wrap">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
         {accountBalances.map(
           (account: {
             id: string;
             displayName: string;
             account: string;
             balance: string;
+            percentChange: string;
           }) => (
             <BalanceCard
               accountName={account.displayName}
               account={account.account}
               balance={account.balance}
+              percentChange={account.percentChange}
               key={account.id}
             />
           )

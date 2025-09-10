@@ -36,10 +36,11 @@ func accountBalances(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type AccountBalance struct {
-		Id          string `json:"id"`
-		DisplayName string `json:"displayName"`
-		Balance     string `json:"balance"`
-		Account     string `json:"account"`
+		Id            string  `json:"id"`
+		DisplayName   string  `json:"displayName"`
+		Balance       string  `json:"balance"`
+		Account       string  `json:"account"`
+		PercentChange float64 `json:"percentChange"`
 	}
 
 	// Collect all account names
@@ -48,42 +49,88 @@ func accountBalances(w http.ResponseWriter, r *http.Request) {
 		accountArgs = append(accountArgs, sa.Account)
 	}
 
-	// Build hledger command: one call for all accounts
-	cmdArgs := []string{"bal", "--no-total", "--end", date}
-	cmdArgs = append(cmdArgs, accountArgs...)
-	for _, f := range file {
-		cmdArgs = append(cmdArgs, "-f", f)
+	// Helper to run hledger and get balances map
+	runHledger := func(endDate string) (map[string]string, error) {
+		cmdArgs := []string{"bal", "--no-total", "--end", endDate}
+		cmdArgs = append(cmdArgs, accountArgs...)
+		for _, f := range file {
+			cmdArgs = append(cmdArgs, "-f", f)
+		}
+
+		cmd := exec.Command("hledger", cmdArgs...)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			fmt.Println(string(output))
+			return nil, fmt.Errorf("hledger error: %w", err)
+		}
+
+		lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+		result := make(map[string]string)
+		for _, line := range lines {
+			for _, acc := range accountArgs {
+				if strings.Contains(line, acc) {
+					fields := strings.Fields(line)
+					if len(fields) >= 2 {
+						result[acc] = fields[0] + " " + fields[1]
+					}
+				}
+			}
+		}
+		return result, nil
 	}
 
-	cmd := exec.Command("hledger", cmdArgs...)
-	output, err := cmd.CombinedOutput()
+	// Current month balances
+	currentBalances, err := runHledger(date)
 	if err != nil {
-		fmt.Println(string(output))
-		fmt.Println("Error running hledger:", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	// Previous month balances
+	lastMonth := parseDate.AddDate(0, -1, 0).Format("2006-01-02")
+	previousBalances, err := runHledger(lastMonth)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
+	// Build response
 	var balances []AccountBalance
 	for id, sa := range config.Cfg.StarredAccounts {
-		// Try to find the line for this account
-		var bal string = "0"
-		for _, line := range lines {
-			if strings.Contains(line, sa.Account) {
-				fields := strings.Fields(line)
-				if len(fields) >= 2 {
-					bal = fields[0] + " " + fields[1]
-				}
-				break
-			}
+		cur := currentBalances[sa.Account]
+		if cur == "" {
+			cur = "0"
 		}
+		prev := previousBalances[sa.Account]
+		if prev == "" {
+			prev = "0"
+		}
+
+		// Parse numbers (assuming amount currency format like "123.45 USD")
+		curFields := strings.Fields(cur)
+		prevFields := strings.Fields(prev)
+
+		var curVal, prevVal float64
+		if len(curFields) > 0 {
+			curVal, _ = strconv.ParseFloat(curFields[0], 64)
+		}
+		if len(prevFields) > 0 {
+			prevVal, _ = strconv.ParseFloat(prevFields[0], 64)
+		}
+
+		var pct float64
+		if prevVal != 0 {
+			pct = ((curVal - prevVal) / prevVal) * 100
+		} else {
+			pct = 0
+		}
+
 		balances = append(balances, AccountBalance{
-			Id:          strconv.Itoa(id),
-			DisplayName: sa.DisplayName,
-			Balance:     bal,
-			Account:     sa.Account,
+			Id:            strconv.Itoa(id),
+			DisplayName:   sa.DisplayName,
+			Balance:       cur,
+			Account:       sa.Account,
+			PercentChange: pct,
 		})
 	}
 

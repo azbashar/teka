@@ -1,18 +1,19 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Akatab, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SiteHeader } from "@/components/SiteHeader";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const jetBrainsMono = JetBrains_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const akatab = Akatab({
+  weight: "600",
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 
@@ -29,7 +30,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${akatab.variable} ${jetBrainsMono.variable} antialiased`}
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <SidebarProvider>
