@@ -11,7 +11,7 @@ var fileArg, mainFileArg string
 
 var rootCmd = &cobra.Command{
 	Use:   "teka",
-	Short: "Teka is your HLedger helper",
+	Short: "Teka is your Hledger helper",
 	Long: `Teka helps you add transactions and manage your ledger with ease.`,
 }
 
@@ -22,6 +22,4 @@ func Execute() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	fileArg = rootCmd.Flag("file").Value.String()
-	mainFileArg = rootCmd.Flag("mainfile").Value.String()
 }

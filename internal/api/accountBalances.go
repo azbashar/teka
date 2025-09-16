@@ -29,7 +29,7 @@ func accountBalances(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file, err := fileselector.GetRequiredFiles("", parseDate.Format("2006-01-02"), fileArg)
+	file, expr, err := fileselector.GetRequiredFiles("", parseDate.Format("2006-01-02"), fileArg)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -55,6 +55,10 @@ func accountBalances(w http.ResponseWriter, r *http.Request) {
 		cmdArgs = append(cmdArgs, accountArgs...)
 		for _, f := range file {
 			cmdArgs = append(cmdArgs, "-f", f)
+		}
+
+		if expr != "" {
+			cmdArgs = append(cmdArgs, expr)
 		}
 
 		cmd := exec.Command("hledger", cmdArgs...)

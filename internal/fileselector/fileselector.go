@@ -3,7 +3,6 @@ package fileselector
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"math"
 	"os"
 	"path/filepath"
@@ -39,23 +38,23 @@ func GetMainFile(file, mainFile string) (string, error) {
 	return filepath.Join(GetRootDir(), "main.journal"), nil
 }
 
-func GetRequiredFiles(start, end, file string) ([]string, error) {
+func GetRequiredFiles(start, end, file string) ([]string, string, error) {
 	if file != "" {
-		return []string{file}, nil
+		return []string{file}, "", nil
 	}
 	if !config.Cfg.EfficientFileStructure.Enabled {
 		file = os.Getenv("LEDGER_FILE")
 			if file == "" {
 				fmt.Println("No ledger file specified. Use --file flag or set LEDGER_FILE environment variable.")
-				return []string{}, errors.New("no ledger file specified")
+				return []string{}, "", errors.New("no ledger file specified")
 			}
-		return []string{file}, nil
+		return []string{file}, "", nil
 	}
 
 	if end == "" || start == "" {
-		files, err := ioutil.ReadDir(GetRootDir())
+		files, err := os.ReadDir(GetRootDir())
 		if err != nil {
-			return []string{}, err
+			return []string{}, "", err
 		}
 		
 		var minYear, maxYear int
@@ -83,7 +82,7 @@ func GetRequiredFiles(start, end, file string) ([]string, error) {
 		}
 
 		if first {
-			return []string{}, errors.New("no valid year folders found")
+			return []string{}, "", errors.New("no valid year folders found")
 		} else {
 			if start == "" {
 				start = strconv.Itoa(minYear)+"-01-01"
@@ -96,15 +95,15 @@ func GetRequiredFiles(start, end, file string) ([]string, error) {
 
 	startDate, err := time.Parse("2006-01-02", start)
 	if err != nil {
-		return []string{}, fmt.Errorf("invalid start date: %w", err)
+		return []string{}, "", fmt.Errorf("invalid start date: %w", err)
 	}
 	endDate, err := time.Parse("2006-01-02", end)
 	if err != nil {
-		return []string{}, fmt.Errorf("invalid end date: %w", err)
+		return []string{}, "", fmt.Errorf("invalid end date: %w", err)
 	}
 
 	if endDate.Before(startDate) {
-		return []string{}, errors.New("end date is before start date")
+		return []string{}, "", errors.New("end date is before start date")
 	}
 
 	startYear := startDate.Year()
@@ -115,7 +114,7 @@ func GetRequiredFiles(start, end, file string) ([]string, error) {
 		path := filepath.Join(GetRootDir(), fmt.Sprintf("%d/%d.journal", year, year))
 		parts = append(parts, path)
 	}
-	return parts, nil
+	return parts, fmt.Sprintf("expr:tag:clopen=%v or not tag:clopen", startYear), nil
 }
 
 // GetCurrentFile returns the appropriate file path for a given date.

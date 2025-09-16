@@ -44,7 +44,7 @@ func getIncomeStatement(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid value mode. Allowed options are then/now/end.",http.StatusBadRequest)
 	}
 
-	files, err := fileselector.GetRequiredFiles(startDate, endDate, fileArg)
+	files, expr, err := fileselector.GetRequiredFiles(startDate, endDate, fileArg)
 	if err != nil {
 		fmt.Println("File selector error: ", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -52,6 +52,10 @@ func getIncomeStatement(w http.ResponseWriter, r *http.Request) {
 	}
 	for _,f := range files {
 		cmdArgs = append(cmdArgs,"-f", f)
+	}
+
+	if expr != "" {
+		cmdArgs = append(cmdArgs, expr)
 	}
 	
 	is, err := exec.Command("hledger", cmdArgs...).CombinedOutput()

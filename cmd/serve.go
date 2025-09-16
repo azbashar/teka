@@ -20,6 +20,8 @@ var serveCmd = &cobra.Command{
 		files, _ := fs.Sub(&frontend.Files,"out")
 		fs := http.FileServer(http.FS(files))
 		http.Handle("/",fs)
+		fileArg = rootCmd.Flag("file").Value.String()
+		mainFileArg = rootCmd.Flag("mainfile").Value.String()
 		api.InitAPI(fileArg, mainFileArg)
 		fmt.Printf("Server started on http://localhost:%s\n", port)
 		http.ListenAndServe(fmt.Sprintf(":%s",port), nil)

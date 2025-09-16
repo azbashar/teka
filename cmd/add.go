@@ -43,6 +43,8 @@ var addCmd = &cobra.Command{
 	Use: "add",
 	Short: "Add a new transaction to your ledger",
 	Run: func(cmd *cobra.Command, args []string) {
+		fileArg = rootCmd.Flag("file").Value.String()
+		mainFileArg = rootCmd.Flag("mainfile").Value.String()
 		// Collect transaction data
 		tx := Transaction{}
 
