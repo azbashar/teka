@@ -1,4 +1,4 @@
-> [! Warning]
+> [!WARNING]
 > This project is still not at an usable stage.
 
 # Teka Finance
