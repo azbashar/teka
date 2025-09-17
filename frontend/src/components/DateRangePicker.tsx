@@ -43,6 +43,56 @@ export function DateRangePicker({ range, onChange }: DateRangePickerProps) {
           onSelect={onChange}
           captionLayout="dropdown"
         />
+        <div className="grid grid-cols-2 gap-2 p-2">
+          <Button
+            onClick={() =>
+              onChange({
+                from: new Date(new Date().setDate(new Date().getDate() - 7)),
+                to: new Date(),
+              })
+            }
+            className="w-full"
+            variant="outline"
+          >
+            Last 7 days
+          </Button>
+          <Button
+            onClick={() =>
+              onChange({
+                from: new Date(new Date().setDate(new Date().getDate() - 30)),
+                to: new Date(),
+              })
+            }
+            className="w-full"
+            variant="outline"
+          >
+            Last 30 days
+          </Button>
+          <Button
+            onClick={() =>
+              onChange({
+                from: new Date(new Date().setDate(new Date().getDate() - 90)),
+                to: new Date(),
+              })
+            }
+            className="w-full"
+            variant="outline"
+          >
+            Last 90 days
+          </Button>
+          <Button
+            onClick={() =>
+              onChange({
+                from: new Date(new Date().setDate(new Date().getDate() - 365)),
+                to: new Date(),
+              })
+            }
+            className="w-full"
+            variant="outline"
+          >
+            Last 365 days
+          </Button>
+        </div>
       </PopoverContent>
     </Popover>
   );

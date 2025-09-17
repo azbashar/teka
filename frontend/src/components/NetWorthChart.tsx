@@ -20,8 +20,6 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 
-import { DateRangePicker } from "./DateRangePicker";
-
 type NetWorthData = { date: string; networth: number; currency: string };
 
 // function to populate chartData from api request with startDate and endDate params. api request will be localhost:8080/api/networth?startDate=..&endDate=..
@@ -43,12 +41,11 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-export function NetWorthChart() {
-  const [range, setRange] = React.useState<DateRange | undefined>({
-    from: new Date(new Date().setMonth(new Date().getMonth() - 1)),
-    to: new Date(),
-  });
+type NetWorthChartProps = {
+  range: DateRange | undefined;
+};
 
+export function NetWorthChart({ range }: NetWorthChartProps) {
   const [chartData, setChartData] = React.useState<NetWorthData[]>([]);
 
   React.useEffect(() => {
@@ -71,7 +68,6 @@ export function NetWorthChart() {
           <CardTitle>Net worth</CardTitle>
           <CardDescription>Your total net worth</CardDescription>
         </div>
-        <DateRangePicker range={range} onChange={setRange} />
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
         <ChartContainer

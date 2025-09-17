@@ -20,8 +20,6 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 
-import { DateRangePicker } from "./DateRangePicker";
-
 type IncomeData = { account: string; amount: number; currency: string };
 
 const colors = [
@@ -43,11 +41,11 @@ async function getNetWorthData(startDate: string, endDate: string) {
   return data;
 }
 
-export function IncomePieChart() {
-  const [range, setRange] = React.useState<DateRange | undefined>({
-    from: new Date(new Date().setMonth(new Date().getMonth() - 1)),
-    to: new Date(),
-  });
+type IncomePieChartProps = {
+  range: DateRange | undefined;
+};
+
+export function IncomePieChart({ range }: IncomePieChartProps) {
   const [chartData, setChartData] = React.useState<IncomeData[]>([]);
   const [chartConfig, setChartConfig] = React.useState<ChartConfig>({});
   const [totalIncome, setTotalIncome] = React.useState<TotalIncome>({
@@ -94,7 +92,6 @@ export function IncomePieChart() {
           <CardTitle>Income</CardTitle>
           <CardDescription>Your income distribution</CardDescription>
         </div>
-        <DateRangePicker range={range} onChange={setRange} />
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
         {noIncome && (

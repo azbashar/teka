@@ -14,6 +14,7 @@ import (
 )
 
 func accountBalances(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w, r)
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return

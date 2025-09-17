@@ -43,11 +43,11 @@ async function getNetWorthData(startDate: string, endDate: string) {
   return data;
 }
 
-export function ExpensePieChart() {
-  const [range, setRange] = React.useState<DateRange | undefined>({
-    from: new Date(new Date().setMonth(new Date().getMonth() - 1)),
-    to: new Date(),
-  });
+type ExpensePieChartProps = {
+  range: DateRange | undefined;
+};
+
+export function ExpensePieChart({ range }: ExpensePieChartProps) {
   const [chartData, setChartData] = React.useState<ExpenseData[]>([]);
   const [chartConfig, setChartConfig] = React.useState<ChartConfig>({});
   const [totalExpense, setTotalExpense] = React.useState<TotalExpense>({
@@ -94,7 +94,6 @@ export function ExpensePieChart() {
           <CardTitle>Expenses</CardTitle>
           <CardDescription>Your expense distribution</CardDescription>
         </div>
-        <DateRangePicker range={range} onChange={setRange} />
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
         {noExpense && (
