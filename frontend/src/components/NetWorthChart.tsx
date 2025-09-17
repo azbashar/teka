@@ -113,7 +113,11 @@ export function NetWorthChart({ range }: NetWorthChartProps) {
                   maximumFractionDigits: 1,
                   notation: "compact",
                   compactDisplay: "short",
-                })} ${chartData[0]?.currency}`
+                })} ${
+                  chartData[Math.ceil(chartData.length / 2)]?.currency ||
+                  chartData[0]?.currency ||
+                  ""
+                }`
               }
               width={80}
             />
@@ -128,7 +132,11 @@ export function NetWorthChart({ range }: NetWorthChartProps) {
                     });
                   }}
                   formatter={(value) =>
-                    `${value.toLocaleString("en-US")} ${chartData[0]?.currency}`
+                    `${value.toLocaleString("en-US")} ${
+                      chartData[Math.ceil(chartData.length / 2)]?.currency ||
+                      chartData[0]?.currency ||
+                      ""
+                    }`
                   }
                   indicator="dot"
                 />
