@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/chart";
 
 import { DateRangePicker } from "./DateRangePicker";
+import { formatLocalDate } from "@/lib/utils";
 
 type ExpenseData = { account: string; amount: number; currency: string };
 
@@ -59,8 +60,8 @@ export function ExpensePieChart({ range }: ExpensePieChartProps) {
   React.useEffect(() => {
     const fetchData = async () => {
       const data = await getNetWorthData(
-        range?.from?.toISOString().slice(0, 10) || "",
-        range?.to?.toISOString().slice(0, 10) || ""
+        formatLocalDate(range?.from),
+        formatLocalDate(range?.to)
       );
       setTotalExpense({
         amount: data.total.amount,

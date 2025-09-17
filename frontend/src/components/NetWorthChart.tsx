@@ -19,6 +19,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { formatLocalDate } from "@/lib/utils";
 
 type NetWorthData = { date: string; networth: number; currency: string };
 
@@ -51,8 +52,8 @@ export function NetWorthChart({ range }: NetWorthChartProps) {
   React.useEffect(() => {
     const fetchData = async () => {
       const data = await getNetWorthData(
-        range?.from?.toISOString().slice(0, 10) || "",
-        range?.to?.toISOString().slice(0, 10) || ""
+        formatLocalDate(range?.from),
+        formatLocalDate(range?.to)
       );
       setChartData(data);
     };

@@ -9,6 +9,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { usePageTitle } from "@/context/PageTitleContext";
 import { HelpCircle } from "lucide-react";
 import * as React from "react";
 import { DateRange } from "react-day-picker";
@@ -43,6 +44,11 @@ export default function Home() {
     };
     fetchData();
   }, [range]);
+
+  const { setTitle } = usePageTitle();
+  React.useEffect(() => {
+    setTitle("Dashboard");
+  }, [setTitle]);
 
   return (
     <div>

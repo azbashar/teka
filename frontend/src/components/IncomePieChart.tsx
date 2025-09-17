@@ -19,6 +19,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { formatLocalDate } from "@/lib/utils";
 
 type IncomeData = { account: string; amount: number; currency: string };
 
@@ -57,8 +58,8 @@ export function IncomePieChart({ range }: IncomePieChartProps) {
   React.useEffect(() => {
     const fetchData = async () => {
       const data = await getNetWorthData(
-        range?.from?.toISOString().slice(0, 10) || "",
-        range?.to?.toISOString().slice(0, 10) || ""
+        formatLocalDate(range?.from),
+        formatLocalDate(range?.to)
       );
       setTotalIncome({
         amount: data.total.amount,

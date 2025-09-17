@@ -4,6 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  --color-table-odd-row: oklch(0.2101 0.0318 264.6645 / 0.07);
   --background: oklch(1 0 0);
   --foreground: oklch(0.2101 0.0318 264.6645);
   --card: oklch(1 0 0);
@@ -65,6 +66,7 @@
 }
 
 .dark {
+  --color-table-odd-row: oklch(0.8109 0 0 / 0.05);
   --background: oklch(0.2126 0.0066 314.6771);
   --foreground: oklch(0.8109 0 0);
   --card: oklch(0.1822 0 0);

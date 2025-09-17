@@ -4,11 +4,14 @@ import (
 	"fmt"
 	"net/http"
 	"os/exec"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/A-Bashar/Teka-Finance/internal/fileselector"
 )
 
 func getIncomeStatement(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w, r)
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -18,6 +21,7 @@ func getIncomeStatement(w http.ResponseWriter, r *http.Request) {
 	endDate := r.URL.Query().Get("endDate")
 	value := r.URL.Query().Get("valueMode")
 	outputFormat := r.URL.Query().Get("outputFormat")
+	period := r.URL.Query().Get("period")
 
 	cmdArgs := []string{"is"}
 
@@ -42,6 +46,14 @@ func getIncomeStatement(w http.ResponseWriter, r *http.Request) {
 			cmdArgs = append(cmdArgs, "--value="+value)
 	} else if value != "" {
 		http.Error(w, "Invalid value mode. Allowed options are then/now/end.",http.StatusBadRequest)
+		return
+	}
+
+	if period == "M" || period == "Q" || period == "Y" {
+		cmdArgs = append(cmdArgs, "-"+period)
+	} else if period != "" {
+		http.Error(w, "Invalid period. Allowed options are M/Q/Y.",http.StatusBadRequest)
+		return
 	}
 
 	files, expr, err := fileselector.GetRequiredFiles(startDate, endDate, fileArg)
@@ -64,6 +76,22 @@ func getIncomeStatement(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Error running hledger:", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+	if outputFormat == "html" {
+		// replace invalid utf8 characters with &nbsp; to prevent breaking html rendering
+		var b strings.Builder
+		for len(is) > 0 {
+ 		    r, s := utf8.DecodeRune(is)
+       		if r == utf8.RuneError && s == 1 {
+        		b.WriteString("&nbsp;")
+         		is = is[1:]
+        	} else {
+        		b.WriteRune(r)
+       			is = is[s:]
+       		}
+	    }
+		is = []byte(b.String())
+    	w.Header().Set("Content-Type", "text/html")
 	}
 	w.Write(is)
 }
