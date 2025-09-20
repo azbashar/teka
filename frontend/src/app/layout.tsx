@@ -5,7 +5,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SiteHeader } from "@/components/SiteHeader";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { PageTitleProvider, usePageTitle } from "@/context/PageTitleContext";
+import { PageTitleProvider } from "@/context/PageTitleContext";
 
 const jetBrainsMono = JetBrains_Mono({
   variable: "--font-mono",

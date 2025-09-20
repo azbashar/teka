@@ -102,6 +102,7 @@ export function NetWorthChart({ range }: NetWorthChartProps) {
                 return date.toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
+                  year: "2-digit",
                 });
               }}
             />
@@ -130,6 +131,7 @@ export function NetWorthChart({ range }: NetWorthChartProps) {
                     return new Date(value).toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",
+                      year: "numeric",
                     });
                   }}
                   formatter={(value) =>

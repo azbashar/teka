@@ -10,13 +10,16 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { usePageTitle } from "@/context/PageTitleContext";
+import { formatLocalDate } from "@/lib/utils";
 import { HelpCircle } from "lucide-react";
 import * as React from "react";
 import { DateRange } from "react-day-picker";
 
 // get account balances from api and show them as card
-async function getAccountBalances() {
-  const res = await fetch("http://localhost:8080/api/accountBalances/");
+async function getAccountBalances(date: string) {
+  const res = await fetch(
+    `http://localhost:8080/api/accountBalances/?date=${date}`
+  );
   const data = await res.json();
   return data;
 }
@@ -39,7 +42,7 @@ export default function Home() {
 
   React.useEffect(() => {
     const fetchData = async () => {
-      const data = await getAccountBalances();
+      const data = await getAccountBalances(formatLocalDate(range?.to));
       setAccountBalances(data);
     };
     fetchData();
