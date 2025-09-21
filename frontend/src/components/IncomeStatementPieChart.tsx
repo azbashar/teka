@@ -19,11 +19,16 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-
-import { DateRangePicker } from "./DateRangePicker";
 import { formatLocalDate } from "@/lib/utils";
+import { Button } from "./ui/button";
+import { CornerLeftUp } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
-type ExpenseData = { account: string; amount: number; currency: string };
+type IncomeStatementData = {
+  account: string;
+  amount: number;
+  currency: string;
+};
 
 const colors = [
   "var(--chart-1)",
@@ -33,49 +38,71 @@ const colors = [
   "var(--chart-5)",
 ];
 
-type TotalExpense = { amount: number; currency: string };
+type Total = { amount: number; currency: string };
 
 // mock API (replace with your fetch)
-async function getNetWorthData(startDate: string, endDate: string) {
+async function getIncomeStatementData(
+  startDate: string,
+  endDate: string,
+  account: string,
+  depth: number
+) {
   const res = await fetch(
-    `http://localhost:8080/api/expenseDistribution/?startDate=${startDate}&endDate=${endDate}`
+    `http://localhost:8080/api/incomestatement/?outputFormat=json&startDate=${startDate}&endDate=${endDate}&account=${account}&depth=${depth}&valueMode=then`
   );
   const data = await res.json();
   return data;
 }
 
-type ExpensePieChartProps = {
+type IncomeStatementPieChartProps = {
   range: DateRange | undefined;
+  rootAccount?: string;
+  title: string;
+  description: string;
 };
 
-export function ExpensePieChart({ range }: ExpensePieChartProps) {
-  const [chartData, setChartData] = React.useState<ExpenseData[]>([]);
+export function IncomeStatementPieChart({
+  range,
+  rootAccount,
+  title,
+  description,
+}: IncomeStatementPieChartProps) {
+  const [chartData, setChartData] = React.useState<IncomeStatementData[]>([]);
   const [chartConfig, setChartConfig] = React.useState<ChartConfig>({});
-  const [totalExpense, setTotalExpense] = React.useState<TotalExpense>({
+  const [total, setTotal] = React.useState<Total>({
     amount: 0,
     currency: "USD",
   });
-  const [noExpense, setNoExpense] = React.useState(false);
+  const [noData, setNoData] = React.useState(false);
+  const [account, setAccount] = React.useState<string[]>([rootAccount || ""]);
+
+  React.useEffect(() => {
+    if (rootAccount) {
+      setAccount([rootAccount]);
+    }
+  }, [rootAccount]);
 
   React.useEffect(() => {
     const fetchData = async () => {
-      const data = await getNetWorthData(
+      const data = await getIncomeStatementData(
         formatLocalDate(range?.from),
-        formatLocalDate(range?.to)
+        formatLocalDate(range?.to),
+        account[account.length - 1],
+        account.length + 1
       );
-      setTotalExpense({
+      setTotal({
         amount: data.total.amount,
         currency: data.total.currency,
       });
       if (data.total.amount === 0) {
-        setNoExpense(true);
+        setNoData(true);
       } else {
-        setNoExpense(false);
-        setChartData(data.expenseData);
+        setNoData(false);
+        setChartData(data.incomeData);
       }
     };
     fetchData();
-  }, [range]);
+  }, [range, account]);
 
   // rebuild chartConfig whenever chartData changes
   React.useEffect(() => {
@@ -92,19 +119,36 @@ export function ExpensePieChart({ range }: ExpensePieChartProps) {
     <Card className="pt-0">
       <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
         <div className="grid flex-1 gap-1">
-          <CardTitle>Expenses</CardTitle>
-          <CardDescription>Your expense distribution</CardDescription>
+          <CardTitle>{title}</CardTitle>
+          <CardDescription>{description}</CardDescription>
         </div>
+        {account.length > 1 && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setAccount((prev) => prev.slice(0, -1));
+                }}
+              >
+                <CornerLeftUp />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Go back to {account[account.length - 2]}</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-        {noExpense && (
+        {noData && (
           <div className="flex h-[250px] w-full items-center justify-center">
             <p className="text-muted-foreground">
-              No Expense during selected date range
+              No data for selected date range
             </p>
           </div>
         )}
-        {!noExpense && (
+        {!noData && (
           <ChartContainer
             config={chartConfig}
             className="aspect-auto h-[250px] w-full"
@@ -117,6 +161,11 @@ export function ExpensePieChart({ range }: ExpensePieChartProps) {
                 nameKey="account"
                 innerRadius={50}
                 outerRadius={80}
+                onClick={(data) => {
+                  if (account[account.length - 1] != data.account) {
+                    setAccount((prev) => [...prev, data.account]);
+                  }
+                }}
               >
                 {chartData.map((entry, i) => (
                   <Cell
@@ -139,7 +188,7 @@ export function ExpensePieChart({ range }: ExpensePieChartProps) {
                             y={viewBox.cy}
                             className="fill-foreground text-3xl font-bold"
                           >
-                            {totalExpense.amount.toLocaleString("en-US", {
+                            {total.amount.toLocaleString("en-US", {
                               maximumFractionDigits: 1,
                               notation: "compact",
                               compactDisplay: "short",
@@ -150,7 +199,7 @@ export function ExpensePieChart({ range }: ExpensePieChartProps) {
                             y={(viewBox.cy || 0) + 24}
                             className="fill-muted-foreground"
                           >
-                            {totalExpense.currency}
+                            {total.currency}
                           </tspan>
                         </text>
                       );

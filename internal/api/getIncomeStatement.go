@@ -1,9 +1,11 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os/exec"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -22,8 +24,22 @@ func getIncomeStatement(w http.ResponseWriter, r *http.Request) {
 	value := r.URL.Query().Get("valueMode")
 	outputFormat := r.URL.Query().Get("outputFormat")
 	period := r.URL.Query().Get("period")
+	account := r.URL.Query().Get("account")
+	depthStr := r.URL.Query().Get("depth")
+
+	if depthStr != "" {
+		depth, err := strconv.Atoi(depthStr)
+		if err != nil || depth < 1 {
+			http.Error(w, "Invalid depth value. It should be a positive integer.", http.StatusBadRequest)
+			return
+		}
+	}
 
 	cmdArgs := []string{"is"}
+
+	if account != "" {
+		cmdArgs = append(cmdArgs, account)
+	}
 
 	switch outputFormat {
 		case "":
@@ -54,6 +70,10 @@ func getIncomeStatement(w http.ResponseWriter, r *http.Request) {
 	} else if period != "" {
 		http.Error(w, "Invalid period. Allowed options are M/Q/Y.",http.StatusBadRequest)
 		return
+	}
+
+	if depthStr != "" {
+		cmdArgs = append(cmdArgs, "--depth="+depthStr)
 	}
 
 	files, expr, err := fileselector.GetRequiredFiles(startDate, endDate, fileArg)
@@ -92,6 +112,84 @@ func getIncomeStatement(w http.ResponseWriter, r *http.Request) {
 	    }
 		is = []byte(b.String())
     	w.Header().Set("Content-Type", "text/html")
+	} else if outputFormat == "json" {
+		w.Header().Set("Content-Type", "application/json")
+		var isData map[string]interface{}
+		if err := json.Unmarshal(is, &isData); err != nil {
+			http.Error(w, fmt.Sprintf("failed to parse hledger output: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		cbrSubreports, ok := isData["cbrSubreports"].([]interface{})
+		if !ok || len(cbrSubreports) == 0 {
+			http.Error(w, "invalid cbrSubreports in hledger output", http.StatusInternalServerError)
+			return
+		}
+
+		var items []IncomeReportItem
+		totalAmount := 0.0
+		totalCurrency := "USD"
+
+		for _, sub := range cbrSubreports {
+			subArr, ok := sub.([]interface{})
+			if !ok || len(subArr) < 2 {
+				continue
+			}
+
+			data, ok := subArr[1].(map[string]interface{})
+			if !ok {
+				continue
+			}
+			prRows, ok := data["prRows"].([]interface{})
+			if !ok {
+				continue
+			}
+
+			for _, row := range prRows {
+				rowMap, ok := row.(map[string]interface{})
+				if !ok {
+					continue
+				}
+
+				accountName, _ := rowMap["prrName"].(string)
+				prrTotal, ok := rowMap["prrTotal"].([]interface{})
+				if !ok || len(prrTotal) == 0 {
+					continue
+				}
+				amountData, ok := prrTotal[0].(map[string]interface{})
+				if !ok {
+					continue
+				}
+
+				amount := 0.0
+				currency := "USD"
+				if aq, ok := amountData["aquantity"].(map[string]interface{}); ok {
+					amount, _ = aq["floatingPoint"].(float64)
+				}
+				if comm, ok := amountData["acommodity"].(string); ok {
+					currency = comm
+				}
+
+				if totalCurrency == "USD" {
+					totalCurrency = currency
+				}
+				totalAmount += amount
+				items = append(items, IncomeReportItem{
+					Account:  accountName,
+					Amount:   amount,
+					Currency: currency,
+				})
+			}
+		}
+
+		response := IncomeReportResponse{
+			IncomeData: items,
+		}
+		response.Total.Amount = totalAmount
+		response.Total.Currency = totalCurrency
+
+		json.NewEncoder(w).Encode(response)
+		return
 	}
 	w.Write(is)
 }

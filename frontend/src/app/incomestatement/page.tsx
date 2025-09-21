@@ -1,7 +1,6 @@
 "use client";
 import { DateRangePicker } from "@/components/DateRangePicker";
-import { ExpensePieChart } from "@/components/ExpensePieChart";
-import { IncomePieChart } from "@/components/IncomePieChart";
+import { IncomeStatementPieChart } from "@/components/IncomeStatementPieChart";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Toggle } from "@/components/ui/toggle";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -10,6 +9,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useConfig } from "@/context/ConfigContext";
 import { usePageTitle } from "@/context/PageTitleContext";
 import { formatLocalDate } from "@/lib/utils";
 import { HelpCircle, ScaleIcon } from "lucide-react";
@@ -45,6 +45,7 @@ async function getIncomeStatement(
 }
 
 export default function IncomeStatementPage() {
+  const config = useConfig();
   const { setTitle } = usePageTitle();
   React.useEffect(() => {
     setTitle("Income Statement");
@@ -146,8 +147,18 @@ export default function IncomeStatementPage() {
       </div>
       <div className="flex flex-col gap-4">
         <div className="grid lg:grid-cols-2 gap-4">
-          <IncomePieChart range={range} />
-          <ExpensePieChart range={range} />
+          <IncomeStatementPieChart
+            range={range}
+            title="Income"
+            description="Your income distribution."
+            rootAccount={config?.Accounts.IncomeAccount}
+          />
+          <IncomeStatementPieChart
+            range={range}
+            title="Expenses"
+            description="Your expense distribution."
+            rootAccount={config?.Accounts.ExpenseAccount}
+          />
         </div>
       </div>
     </div>

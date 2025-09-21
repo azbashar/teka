@@ -1,14 +1,14 @@
 "use client";
 import { BalanceCard } from "@/components/BalanceCard";
 import { DateRangePicker } from "@/components/DateRangePicker";
-import { ExpensePieChart } from "@/components/ExpensePieChart";
-import { IncomePieChart } from "@/components/IncomePieChart";
+import { IncomeStatementPieChart } from "@/components/IncomeStatementPieChart";
 import { NetWorthChart } from "@/components/NetWorthChart";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useConfig } from "@/context/ConfigContext";
 import { usePageTitle } from "@/context/PageTitleContext";
 import { formatLocalDate } from "@/lib/utils";
 import { HelpCircle } from "lucide-react";
@@ -25,6 +25,7 @@ async function getAccountBalances(date: string) {
 }
 
 export default function Home() {
+  const config = useConfig();
   const [range, setRange] = React.useState<DateRange | undefined>({
     from: new Date(new Date().setMonth(new Date().getMonth() - 1)),
     to: new Date(),
@@ -97,8 +98,18 @@ export default function Home() {
       <div className="flex flex-col gap-4">
         <NetWorthChart range={range} />
         <div className="grid lg:grid-cols-2 gap-4">
-          <IncomePieChart range={range} />
-          <ExpensePieChart range={range} />
+          <IncomeStatementPieChart
+            range={range}
+            title="Income"
+            description="Your income distribution."
+            rootAccount={config?.Accounts.IncomeAccount}
+          />
+          <IncomeStatementPieChart
+            range={range}
+            title="Expenses"
+            description="Your expense distribution."
+            rootAccount={config?.Accounts.ExpenseAccount}
+          />
         </div>
       </div>
     </div>
