@@ -16,6 +16,7 @@ var rootCmd = &cobra.Command{
 }
 
 func Execute() {
+	
 	fmt.Printf(`
 ░▀█▀░█▀▀░█░█░█▀█
 ░░█░░█▀▀░█▀▄░█▀█

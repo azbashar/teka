@@ -12,6 +12,11 @@ type Accounts struct {
 	ConversionAccount string `yaml:"conversion"`
 	FXGainAccount     string `yaml:"fx_gain"`
 	FXLossAccount     string `yaml:"fx_loss"`
+	AssetsAccount    string `yaml:"assets"`
+	LiabilitiesAccount string `yaml:"liabilities"`
+	IncomeAccount    string `yaml:"income"`
+	ExpenseAccount   string `yaml:"expense"`
+	EquityAccount    string `yaml:"equity"`
 }
 
 type EfficientFileStructure struct {
@@ -33,14 +38,21 @@ type Config struct {
 
 var Cfg Config
 
-func LoadConfig() error {
+func GetConfigPath() (string, error) {
 	confPath, err := os.UserConfigDir()
 	if err != nil {
-		return fmt.Errorf("failed to get config path: %w", err)
+		return "", fmt.Errorf("failed to get config path: %w", err)
 	}
 	confPath = filepath.Join(confPath, "teka")
 	_ = os.MkdirAll(confPath, 0700)
-	configFile := filepath.Join(confPath, "tekaconf.yaml")
+	return filepath.Join(confPath, "tekaconf.yaml"), nil
+}
+
+func LoadConfig() error {
+	configFile, err := GetConfigPath()
+	if err != nil {
+		return err
+	}
 
 	data, err := os.ReadFile(configFile)
 	if err != nil {
@@ -52,6 +64,11 @@ func LoadConfig() error {
 					ConversionAccount: "equity:conversion",
 					FXGainAccount:     "income:fx gain",
 					FXLossAccount:     "expenses:fx loss",
+					AssetsAccount:    "assets",
+					LiabilitiesAccount: "liabilities",
+					IncomeAccount:    "income",
+					ExpenseAccount:   "expenses",
+					EquityAccount:    "equity",
 				},
 				EfficientFileStructure: EfficientFileStructure{
 					Enabled:   false,

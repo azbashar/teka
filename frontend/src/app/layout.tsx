@@ -6,6 +6,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { SiteHeader } from "@/components/SiteHeader";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { PageTitleProvider } from "@/context/PageTitleContext";
+import { ConfigProvider } from "@/context/ConfigContext";
 
 const jetBrainsMono = JetBrains_Mono({
   variable: "--font-mono",
@@ -34,15 +35,17 @@ export default function RootLayout({
         className={`${akatab.variable} ${jetBrainsMono.variable} antialiased`}
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <SidebarProvider>
-            <AppSidebar />
-            <SidebarInset>
-              <PageTitleProvider>
-                <SiteHeader />
-                <main className="px-4 py-2">{children}</main>
-              </PageTitleProvider>
-            </SidebarInset>
-          </SidebarProvider>
+          <ConfigProvider>
+            <SidebarProvider>
+              <AppSidebar />
+              <SidebarInset>
+                <PageTitleProvider>
+                  <SiteHeader />
+                  <main className="px-4 py-2">{children}</main>
+                </PageTitleProvider>
+              </SidebarInset>
+            </SidebarProvider>
+          </ConfigProvider>
         </ThemeProvider>
       </body>
     </html>
