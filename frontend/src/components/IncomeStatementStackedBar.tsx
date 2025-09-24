@@ -201,7 +201,24 @@ export function IncomeStatementStackedBar({
                 }
                 width={80}
               />
-              <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent />}
+                formatter={(value, name, item) => (
+                  <div className="flex items-center gap-2 w-full">
+                    <div
+                      className="w-2 h-2 rounded-xs"
+                      style={{ backgroundColor: item.color }}
+                    ></div>
+                    <span className="flex gap-2 justify-between flex-1">
+                      {name}{" "}
+                      <span className="text-muted-foreground">
+                        {value.toLocaleString("en-US")} {currency}
+                      </span>
+                    </span>
+                  </div>
+                )}
+              />
               {accounts.map((acct) => (
                 <Bar
                   key={acct}

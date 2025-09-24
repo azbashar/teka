@@ -91,17 +91,6 @@ export default function IncomeStatementPage() {
           <DateRangePicker range={range} onChange={setRange} />
           <div className="flex items-baseline gap-1">
             <h2 className="font-semibold text-xl">Income Statement</h2>
-            <Tooltip>
-              <TooltipTrigger>
-                <HelpCircle className="size-3 text-gray-200" />
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>
-                  Accounts added to <code>starred_accounts</code> in the config
-                  will be shown here.
-                </p>
-              </TooltipContent>
-            </Tooltip>
           </div>
         </div>
         <div className="flex gap-2 mb-2">

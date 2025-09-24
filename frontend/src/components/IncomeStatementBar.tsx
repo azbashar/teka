@@ -187,6 +187,23 @@ export function IncomeStatementBar({
               <ChartTooltip
                 cursor={false}
                 content={<ChartTooltipContent indicator="dashed" />}
+                formatter={(value, name, item) => (
+                  <div className="flex items-center gap-2 w-full">
+                    <div
+                      className="w-2 h-2 rounded-xs"
+                      style={{ backgroundColor: item.color }}
+                    ></div>
+                    <span className="flex gap-2 justify-between flex-1">
+                      {name}{" "}
+                      <span className="text-muted-foreground">
+                        {value.toLocaleString("en-US")}{" "}
+                        {chartData[Math.ceil(chartData.length / 2)]?.currency ||
+                          chartData[0]?.currency ||
+                          ""}
+                      </span>
+                    </span>
+                  </div>
+                )}
               />
               <Bar dataKey="income" fill="var(--color-income)" />
               <Bar dataKey="expense" fill="var(--color-expense)" />

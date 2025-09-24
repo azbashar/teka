@@ -20,6 +20,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { formatLocalDate } from "@/lib/utils";
+import { Separator } from "./ui/separator";
 
 type NetWorthData = { date: string; networth: number; currency: string };
 
@@ -68,6 +69,13 @@ export function NetWorthChart({ range }: NetWorthChartProps) {
         <div className="grid flex-1 gap-1">
           <CardTitle>Net worth</CardTitle>
           <CardDescription>Your total net worth</CardDescription>
+        </div>
+        <div className="border-l-2 pl-4 ">
+          <p className="text-muted-foreground text-sm">Final Networth</p>
+          <p className="font-black text-2xl text-right">
+            {chartData[chartData.length - 1]?.networth.toLocaleString("en-US")}{" "}
+            {chartData[0]?.currency}
+          </p>
         </div>
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
