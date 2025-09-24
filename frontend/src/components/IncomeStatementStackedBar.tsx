@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { DateRange } from "react-day-picker";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Brush } from "recharts";
 
 import {
   Card,
@@ -218,6 +218,12 @@ export function IncomeStatementStackedBar({
               <ChartLegend
                 className="flex-wrap"
                 content={<ChartLegendContent />}
+              />
+              <Brush
+                dataKey="period"
+                height={10}
+                stroke="var(--color-accent)"
+                fill="var(--color-background)"
               />
             </BarChart>
           </ChartContainer>
