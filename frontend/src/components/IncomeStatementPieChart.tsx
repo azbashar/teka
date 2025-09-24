@@ -35,6 +35,7 @@ import { BarChartBigIcon, CornerLeftUp, PieChartIcon } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import { TabsContent } from "@radix-ui/react-tabs";
+import { useConfig } from "@/context/ConfigContext";
 
 type IncomeStatementData = {
   account: string;
@@ -79,6 +80,8 @@ export function IncomeStatementPieChart({
   title,
   description,
 }: IncomeStatementPieChartProps) {
+  const config = useConfig();
+
   const [chartData, setChartData] = React.useState<IncomeStatementData[]>([]);
   const [chartConfig, setChartConfig] = React.useState<ChartConfig>({});
   const [total, setTotal] = React.useState<Total>({
@@ -102,19 +105,38 @@ export function IncomeStatementPieChart({
         account[account.length - 1],
         account.length + 1
       );
-      setTotal({
-        amount: data.total.amount,
-        currency: data.total.currency,
-      });
-      if (data.total.amount === 0) {
+      if (!data.incomeData) {
         setNoData(true);
       } else {
         setNoData(false);
-        setChartData(data.incomeData);
+        setChartData(
+          data.incomeData[0].data.sort(
+            (a: IncomeStatementData, b: IncomeStatementData) =>
+              b.amount - a.amount
+          )
+        );
+      }
+      // if account starts with ExpenseAccount then *-1
+      if (data.incomeData) {
+        if (
+          account[account.length - 1].startsWith(
+            config?.Accounts.ExpenseAccount ?? "expenses"
+          )
+        ) {
+          setTotal({
+            amount: -data.incomeData[0].total.amount,
+            currency: data.incomeData[0].total.currency,
+          });
+        } else {
+          setTotal({
+            amount: data.incomeData[0].total.amount,
+            currency: data.incomeData[0].total.currency,
+          });
+        }
       }
     };
     fetchData();
-  }, [range, account]);
+  }, [range, account, config]);
 
   // rebuild chartConfig whenever chartData changes
   React.useEffect(() => {
@@ -307,10 +329,6 @@ export function IncomeStatementPieChart({
                     </Bar>
                   </BarChart>
                 </ChartContainer>
-                {/* <ChartLegend
-                  className="flex-wrap"
-                  content={<ChartLegendContent />}
-                /> */}
               </TabsContent>
             </>
           )}

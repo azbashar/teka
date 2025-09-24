@@ -5,7 +5,7 @@ const ConfigContext = createContext<Config | null>(null);
 
 import { ReactNode } from "react";
 
-type Config = {
+export type Config = {
   AmountColumn: number;
   Accounts: {
     ConversionAccount: string;

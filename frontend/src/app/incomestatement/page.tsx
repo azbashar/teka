@@ -1,6 +1,8 @@
 "use client";
 import { DateRangePicker } from "@/components/DateRangePicker";
+import { IncomeStatementBar } from "@/components/IncomeStatementBar";
 import { IncomeStatementPieChart } from "@/components/IncomeStatementPieChart";
+import { IncomeStatementStackedBar } from "@/components/IncomeStatementStackedBar";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Toggle } from "@/components/ui/toggle";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -29,6 +31,9 @@ async function getIncomeStatement(
   let data = await res.text();
 
   data = data.replace(/<style[\s\S]*?<\/style>/gi, "");
+
+  // Remove <link rel="stylesheet" ...> tags
+  data = data.replace(/<link\s+rel=["']stylesheet["'][^>]*>/gi, "");
 
   data =
     `<div class="incomestatementdata">` +
@@ -146,6 +151,26 @@ export default function IncomeStatementPage() {
         </div>
       </div>
       <div className="flex flex-col gap-4">
+        <IncomeStatementBar
+          range={range}
+          title="Income and Expenses Growth"
+          description="Your income and expenses per month."
+        />
+
+        <div className="grid lg:grid-cols-2 gap-4">
+          <IncomeStatementStackedBar
+            range={range}
+            title="Income Growth"
+            description="Your income per month by account."
+            rootAccount={config?.Accounts.IncomeAccount}
+          />
+          <IncomeStatementStackedBar
+            range={range}
+            title="Expenses Growth"
+            description="Your expenses per month by account."
+            rootAccount={config?.Accounts.ExpenseAccount}
+          />
+        </div>
         <div className="grid lg:grid-cols-2 gap-4">
           <IncomeStatementPieChart
             range={range}

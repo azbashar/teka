@@ -10,17 +10,15 @@ func InitAPI(file, mainFile string) {
 	http.HandleFunc("/api/incomestatement/", getIncomeStatement)
 	http.HandleFunc("/api/accountBalances/", accountBalances)
 	http.HandleFunc("/api/networth/", getNetWorth)
-    http.HandleFunc("/api/incomeDistribution/", incomeDistribution)
-    http.HandleFunc("/api/expenseDistribution/", expenseDistribution)
-    http.HandleFunc("/api/getConfig/", getConfig)
+	http.HandleFunc("/api/getConfig/", getConfig)
 }
 
 func enableCORS(w http.ResponseWriter, r *http.Request) {
-    w.Header().Set("Access-Control-Allow-Origin", "*")
-    w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-    w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-    if r.Method == "OPTIONS" {
-        w.WriteHeader(http.StatusOK)
-        return
-    }
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 }
