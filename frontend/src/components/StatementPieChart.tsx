@@ -36,6 +36,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import { TabsContent } from "@radix-ui/react-tabs";
 import { useConfig } from "@/context/ConfigContext";
+import { toast } from "sonner";
 
 type IncomeStatementData = {
   account: string;
@@ -53,32 +54,22 @@ const colors = [
 
 type Total = { amount: number; currency: string };
 
-// mock API (replace with your fetch)
-async function getIncomeStatementData(
-  startDate: string,
-  endDate: string,
-  account: string,
-  depth: number
-) {
-  const res = await fetch(
-    `http://localhost:8080/api/incomestatement/?outputFormat=json&startDate=${startDate}&endDate=${endDate}&account=${account}&depth=${depth}&valueMode=then`
-  );
-  const data = await res.json();
-  return data;
-}
-
 type IncomeStatementPieChartProps = {
   range: DateRange | undefined;
   rootAccount?: string;
   title: string;
   description: string;
+  statement: "incomestatement" | "balancesheet";
+  type?: "pie" | "bar";
 };
 
-export function IncomeStatementPieChart({
+export function StatementPieChart({
   range,
   rootAccount,
   title,
   description,
+  statement,
+  type = "pie",
 }: IncomeStatementPieChartProps) {
   const config = useConfig();
 
@@ -89,54 +80,66 @@ export function IncomeStatementPieChart({
     currency: "USD",
   });
   const [noData, setNoData] = React.useState(false);
-  const [account, setAccount] = React.useState<string[]>([rootAccount || ""]);
-
-  React.useEffect(() => {
-    if (rootAccount) {
-      setAccount([rootAccount]);
-    }
-  }, [rootAccount]);
+  const [account, setAccount] = React.useState<string[]>([rootAccount ?? ""]);
 
   React.useEffect(() => {
     const fetchData = async () => {
-      const data = await getIncomeStatementData(
-        formatLocalDate(range?.from),
-        formatLocalDate(range?.to),
-        account[account.length - 1],
-        account.length + 1
-      );
-      if (!data.incomeData) {
-        setNoData(true);
-      } else {
-        setNoData(false);
-        setChartData(
-          data.incomeData[0].data.sort(
-            (a: IncomeStatementData, b: IncomeStatementData) =>
-              b.amount - a.amount
-          )
-        );
-      }
-      // if account starts with ExpenseAccount then *-1
-      if (data.incomeData) {
-        if (
-          account[account.length - 1].startsWith(
-            config?.Accounts.ExpenseAccount ?? "expenses"
-          )
-        ) {
-          setTotal({
-            amount: -data.incomeData[0].total.amount,
-            currency: data.incomeData[0].total.currency,
-          });
-        } else {
-          setTotal({
-            amount: data.incomeData[0].total.amount,
-            currency: data.incomeData[0].total.currency,
-          });
-        }
-      }
+      const startDate = formatLocalDate(range?.from);
+      const endDate = formatLocalDate(range?.to);
+      const acct = account[account.length - 1];
+      const depth = account.length + 1;
+      const value = statement == "incomestatement" ? "then" : "end";
+      fetch(
+        `http://localhost:8080/api/${statement}/?outputFormat=json&startDate=${startDate}&endDate=${endDate}&account=${acct}&depth=${depth}&valueMode=${value}`
+      )
+        .then((res) => {
+          if (!res.ok) {
+            return res.text().then((body) => {
+              throw new Error(`(${res.status}) ${res.statusText} : ${body}}`);
+            });
+          }
+          return res.json();
+        })
+        .then((data) => {
+          if (!data) {
+            setNoData(true);
+          } else {
+            setNoData(false);
+            setChartData(
+              data[0].data.sort(
+                (a: IncomeStatementData, b: IncomeStatementData) =>
+                  b.amount - a.amount
+              )
+            );
+          }
+          // if account starts with ExpenseAccount then *-1
+          if (data) {
+            if (
+              account[account.length - 1].startsWith(
+                config?.Accounts.ExpenseAccount ?? "expenses"
+              )
+            ) {
+              setTotal({
+                amount: -data[0].total.amount,
+                currency: data[0].total.currency,
+              });
+            } else {
+              setTotal({
+                amount: data[0].total.amount,
+                currency: data[0].total.currency,
+              });
+            }
+          }
+        })
+        .catch((err) => {
+          toast.error(`Error fetching data: ${err.message}`);
+          console.error(
+            `Component: StatementPieChart, Error fetching Income Statement data: ${err.message}`
+          );
+        });
     };
     fetchData();
-  }, [range, account, config]);
+  }, [range, account, config, statement]);
 
   // rebuild chartConfig whenever chartData changes
   React.useEffect(() => {
@@ -151,7 +154,7 @@ export function IncomeStatementPieChart({
 
   return (
     <Card className="pt-0">
-      <Tabs defaultValue="pie">
+      <Tabs defaultValue={type}>
         <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
           <div className="grid flex-1 gap-1">
             <CardTitle>{title}</CardTitle>

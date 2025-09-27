@@ -7,6 +7,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { PageTitleProvider } from "@/context/PageTitleContext";
 import { ConfigProvider } from "@/context/ConfigContext";
+import { Toaster } from "@/components/ui/sonner";
 
 const jetBrainsMono = JetBrains_Mono({
   variable: "--font-mono",
@@ -37,6 +38,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <ConfigProvider>
             <SidebarProvider>
+              <Toaster />
               <AppSidebar />
               <SidebarInset>
                 <PageTitleProvider>

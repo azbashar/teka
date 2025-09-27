@@ -24,6 +24,7 @@ import { useConfig } from "@/context/ConfigContext";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { Button } from "./ui/button";
 import { CornerLeftUp } from "lucide-react";
+import { toast } from "sonner";
 
 const colors = [
   "var(--chart-1)",
@@ -38,33 +39,20 @@ type StackedBarChartProps = {
   title: string;
   description: string;
   rootAccount?: string;
+  statement: "incomestatement" | "balancesheet";
 };
 
-type RawIncomeStatementData = {
-  incomeData: {
-    data: { account: string; amount: number; currency: string }[];
-    dates: { from: string; to: string };
-    total: { amount: number; currency: string };
-  }[];
-};
-
-async function getIncomeStatementData(
-  startDate: string,
-  endDate: string,
-  account: string,
-  depth: number
-) {
-  const res = await fetch(
-    `http://localhost:8080/api/incomestatement/?outputFormat=json&startDate=${startDate}&endDate=${endDate}&depth=${depth}&valueMode=then&period=M&account=${account}`
-  );
-  return res.json();
-}
-
-export function IncomeStatementStackedBar({
+type RawStatementData = {
+  data: { account: string; amount: number; currency: string }[];
+  dates: { from: string; to: string };
+  total: { amount: number; currency: string };
+}[];
+export function StatementStackedBar({
   range,
   title,
   description,
   rootAccount,
+  statement,
 }: StackedBarChartProps) {
   const config = useConfig();
   const [chartData, setChartData] = React.useState<
@@ -76,65 +64,76 @@ export function IncomeStatementStackedBar({
   const [account, setAccount] = React.useState<string[]>([rootAccount || ""]);
 
   React.useEffect(() => {
-    if (rootAccount) {
-      setAccount([rootAccount]);
-    }
-  }, [rootAccount]);
-
-  React.useEffect(() => {
     const fetchData = async () => {
-      const data: RawIncomeStatementData = await getIncomeStatementData(
-        formatLocalDate(
-          new Date(
-            range?.from?.getFullYear() ?? 1970,
-            range?.from?.getMonth() ?? 0,
-            1
-          )
-        ),
-        formatLocalDate(
-          new Date(
-            range?.to?.getFullYear() ?? 1970,
-            (range?.to?.getMonth() ?? 0) + 1,
-            0
-          )
-        ),
-        account[account.length - 1],
-        account.length + 1
+      const startDate = formatLocalDate(
+        new Date(
+          range?.from?.getFullYear() ?? 1970,
+          range?.from?.getMonth() ?? 0,
+          1
+        )
       );
-
-      if (!data?.incomeData || data.incomeData.length === 0) {
-        setNoData(true);
-        return;
-      }
-
-      setNoData(false);
-      setCurrency(data.incomeData[0].total.currency ?? "");
-
-      // Collect all unique accounts
-      const allAccounts = Array.from(
-        new Set(data.incomeData.flatMap((p) => p.data.map((d) => d.account)))
+      const endDate = formatLocalDate(
+        new Date(
+          range?.to?.getFullYear() ?? 1970,
+          (range?.to?.getMonth() ?? 0) + 1,
+          0
+        )
       );
-      setAccounts(allAccounts);
+      const acct = account[account.length - 1];
+      const depth = account.length + 1;
+      const value = statement == "incomestatement" ? "then" : "end";
+      fetch(
+        `http://localhost:8080/api/${statement}/?outputFormat=json&startDate=${startDate}&endDate=${endDate}&depth=${depth}&valueMode=${value}&period=M&account=${acct}`
+      )
+        .then((res) => {
+          if (!res.ok) {
+            return res.text().then((body) => {
+              throw new Error(`(${res.status}) ${res.statusText} : ${body}}`);
+            });
+          }
+          return res.json();
+        })
+        .then((data: RawStatementData) => {
+          if (!data || data.length === 0) {
+            setNoData(true);
+            return;
+          }
 
-      const transformed = data.incomeData.map((period) => {
-        const base: Record<string, number | string> = {
-          period: new Date(period.dates.from).toLocaleDateString("en-US", {
-            month: "short",
-            year: "2-digit",
-          }),
-        };
-        allAccounts.forEach((account) => {
-          const item = period.data.find((d) => d.account === account);
-          base[account] = item?.amount ?? 0;
+          setNoData(false);
+          setCurrency(data[0].total.currency ?? "");
+
+          // Collect all unique accounts
+          const allAccounts = Array.from(
+            new Set(data.flatMap((p) => p.data.map((d) => d.account)))
+          );
+          setAccounts(allAccounts);
+
+          const transformed = data.map((period) => {
+            const base: Record<string, number | string> = {
+              period: new Date(period.dates.from).toLocaleDateString("en-US", {
+                month: "short",
+                year: "2-digit",
+              }),
+            };
+            allAccounts.forEach((account) => {
+              const item = period.data.find((d) => d.account === account);
+              base[account] = item?.amount ?? 0;
+            });
+            return base;
+          });
+
+          setChartData(transformed);
+        })
+        .catch((err) => {
+          toast.error(`Error fetching data: ${err.message}`);
+          console.error(
+            `Component: StatementStackedBar, Error fetching data: ${err.message}`
+          );
         });
-        return base;
-      });
-
-      setChartData(transformed);
     };
 
     fetchData();
-  }, [range, account, config]);
+  }, [range, account, config, statement]);
 
   // Build chartConfig dynamically for shadcn legend/colors
   const chartConfig: ChartConfig = accounts.reduce((acc, account, idx) => {

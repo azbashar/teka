@@ -12,7 +12,7 @@ import (
 	"github.com/A-Bashar/Teka-Finance/internal/fileselector"
 )
 
-func getIncomeStatement(w http.ResponseWriter, r *http.Request) {
+func getBalanceSheet(w http.ResponseWriter, r *http.Request) {
 	enableCORS(w, r)
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -35,7 +35,7 @@ func getIncomeStatement(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	cmdArgs := []string{"is"}
+	cmdArgs := []string{"bs"}
 
 	if account != "" {
 		cmdArgs = append(cmdArgs, account)
@@ -90,9 +90,9 @@ func getIncomeStatement(w http.ResponseWriter, r *http.Request) {
 		cmdArgs = append(cmdArgs, expr)
 	}
 
-	is, err := exec.Command("hledger", cmdArgs...).CombinedOutput()
+	bs, err := exec.Command("hledger", cmdArgs...).CombinedOutput()
 	if err != nil {
-		fmt.Println(string(is))
+		fmt.Println(string(bs))
 		fmt.Println("Error running hledger:", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -100,40 +100,40 @@ func getIncomeStatement(w http.ResponseWriter, r *http.Request) {
 	if outputFormat == "html" {
 		// replace invalid utf8 characters with &nbsp; to prevent breaking html rendering
 		var b strings.Builder
-		for len(is) > 0 {
-			r, s := utf8.DecodeRune(is)
+		for len(bs) > 0 {
+			r, s := utf8.DecodeRune(bs)
 			if r == utf8.RuneError && s == 1 {
 				b.WriteString("&nbsp;")
-				is = is[1:]
+				bs = bs[1:]
 			} else {
 				b.WriteRune(r)
-				is = is[s:]
+				bs = bs[s:]
 			}
 		}
-		is = []byte(b.String())
+		bs = []byte(b.String())
 		w.Header().Set("Content-Type", "text/html")
 	} else if outputFormat == "json" {
 		w.Header().Set("Content-Type", "application/json")
-		var isData map[string]any
-		if err := json.Unmarshal(is, &isData); err != nil {
+		var bsData map[string]any
+		if err := json.Unmarshal(bs, &bsData); err != nil {
 			http.Error(w, fmt.Sprintf("failed to parse hledger output: %v", err), http.StatusInternalServerError)
 			return
 		}
 
 		// build period-based response
-		cbrDates, ok := isData["cbrDates"].([]any)
+		cbrDates, ok := bsData["cbrDates"].([]any)
 		if !ok {
 			http.Error(w, "invalid cbrDates in hledger output", http.StatusInternalServerError)
 			return
 		}
 
-		cbrSubreports, ok := isData["cbrSubreports"].([]any)
+		cbrSubreports, ok := bsData["cbrSubreports"].([]any)
 		if !ok {
 			http.Error(w, "invalid cbrSubreports in hledger output", http.StatusInternalServerError)
 			return
 		}
 
-		cbrTotals, ok := isData["cbrTotals"].(map[string]any)
+		cbrTotals, ok := bsData["cbrTotals"].(map[string]any)
 		if !ok {
 			http.Error(w, "invalid cbrTotals in hledger output", http.StatusInternalServerError)
 			return
@@ -255,5 +255,5 @@ func getIncomeStatement(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write(is)
+	w.Write(bs)
 }

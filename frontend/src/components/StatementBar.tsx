@@ -22,120 +22,166 @@ import {
 import { formatLocalDate } from "@/lib/utils";
 
 import { Config, useConfig } from "@/context/ConfigContext";
-
-async function getIncomeStatementData(startDate: string, endDate: string) {
-  console.log(`from: ${startDate} to: ${endDate}`);
-  const res = await fetch(
-    `http://localhost:8080/api/incomestatement/?outputFormat=json&startDate=${startDate}&endDate=${endDate}&depth=1&valueMode=then&period=M`
-  );
-  const data = await res.json();
-  return data;
-}
+import { toast } from "sonner";
 
 type IncomeStatementBarProps = {
   range: DateRange | undefined;
   title: string;
   description: string;
+  statement: "incomestatement" | "balancesheet";
 };
 
-type IncomeStatementData = {
+type ChartDataItem = {
   period: string;
-  income: number;
-  expense: number;
   currency: string;
-}[];
+  // dynamic: will hold either income/expense or assets/liabilities
+  [key: string]: string | number;
+};
 
 type RawIncomeStatementData = {
-  incomeData: {
-    data: {
-      account: string;
-      amount: number;
-      currency: string;
-    }[];
-    dates: {
-      from: string;
-      to: string;
-    };
-    total: {
-      amount: number;
-      currency: string;
-    };
+  data: {
+    account: string;
+    amount: number;
+    currency: string;
   }[];
-};
+  dates: {
+    from: string;
+    to: string;
+  };
+  total: {
+    amount: number;
+    currency: string;
+  };
+}[];
 
 function transformToChartData(
   rawData: RawIncomeStatementData,
-  config: Config | null
-): IncomeStatementData {
-  return rawData.incomeData.map((period) => {
-    const incomeItem = period.data.find(
-      (d) => d.account == config?.Accounts.IncomeAccount
-    );
-    const expenseItem = period.data.find(
-      (d) => d.account == config?.Accounts.ExpenseAccount
-    );
-
-    return {
+  config: Config | null,
+  statement: "incomestatement" | "balancesheet"
+): ChartDataItem[] {
+  return rawData.map((period) => {
+    const base = {
       period: `${new Date(period.dates.from).toLocaleDateString("en-US", {
         month: "short",
         year: "2-digit",
       })}`,
-      income: incomeItem?.amount || 0,
-      expense: expenseItem?.amount || 0,
-      currency: incomeItem?.currency || expenseItem?.currency || "",
     };
+
+    if (statement === "incomestatement") {
+      const incomeItem = period.data.find(
+        (d) => d.account === config?.Accounts.IncomeAccount
+      );
+      const expenseItem = period.data.find(
+        (d) => d.account === config?.Accounts.ExpenseAccount
+      );
+
+      return {
+        ...base,
+        income: incomeItem?.amount || 0,
+        expense: expenseItem?.amount || 0,
+        currency: incomeItem?.currency || expenseItem?.currency || "",
+      };
+    } else {
+      const assetsItem = period.data.find(
+        (d) => d.account === config?.Accounts.AssetsAccount
+      );
+      const liabilitiesItem = period.data.find(
+        (d) => d.account === config?.Accounts.LiabilitiesAccount
+      );
+
+      return {
+        ...base,
+        assets: assetsItem?.amount || 0,
+        liabilities: liabilitiesItem?.amount || 0,
+        currency: assetsItem?.currency || liabilitiesItem?.currency || "",
+      };
+    }
   });
 }
 
-export function IncomeStatementBar({
+export function StatementBar({
   range,
   title,
   description,
+  statement,
 }: IncomeStatementBarProps) {
   const config = useConfig();
 
-  const [chartData, setChartData] = React.useState<IncomeStatementData>([]);
+  const [chartData, setChartData] = React.useState<ChartDataItem[]>([]);
   const [noData, setNoData] = React.useState(false);
 
   React.useEffect(() => {
     const fetchData = async () => {
-      const data = await getIncomeStatementData(
-        formatLocalDate(
-          new Date(
-            range?.from?.getFullYear() ?? 1970,
-            range?.from?.getMonth() ?? 1,
-            1
-          )
-        ), // round date to start of month
-        formatLocalDate(
-          new Date(
-            range?.to?.getFullYear() ?? 1970,
-            (range?.to?.getMonth() ?? 1) + 1,
-            0
-          )
-        ) // round date to end of month
-      );
+      const startDate = formatLocalDate(
+        new Date(
+          range?.from?.getFullYear() ?? 1970,
+          range?.from?.getMonth() ?? 1,
+          1
+        )
+      ); // round date to start of month
+      const endDate = formatLocalDate(
+        new Date(
+          range?.to?.getFullYear() ?? 1970,
+          (range?.to?.getMonth() ?? 1) + 1,
+          0
+        )
+      ); // round date to end of month
+      const value = statement === "incomestatement" ? "then" : "end";
 
-      if (!data.incomeData) {
-        setNoData(true);
-      } else {
-        setNoData(false);
-        setChartData(transformToChartData(data, config));
-      }
+      fetch(
+        `http://localhost:8080/api/${statement}/?outputFormat=json&startDate=${startDate}&endDate=${endDate}&depth=1&valueMode=${value}&period=M`
+      )
+        .then((res) => {
+          if (!res.ok) {
+            return res.text().then((body) => {
+              throw new Error(`(${res.status}) ${res.statusText} : ${body}}`);
+            });
+          }
+          return res.json();
+        })
+        .then((data) => {
+          if (!data) {
+            setNoData(true);
+          } else {
+            setNoData(false);
+            setChartData(transformToChartData(data, config, statement));
+          }
+        })
+        .catch((err) => {
+          toast.error(`Error fetching data: ${err.message}`);
+          console.error(
+            `Component: StatementBar, Error fetching ${statement} data: ${err.message}`
+          );
+        });
     };
     fetchData();
-  }, [range, config]);
+  }, [range, config, statement]);
 
-  const chartConfig = {
-    income: {
-      label: "Income",
-      color: "var(--chart-1)",
-    },
-    expense: {
-      label: "Expenses",
-      color: "var(--chart-2)",
-    },
-  } satisfies ChartConfig;
+  // Dynamically build chart config depending on statement
+  const chartConfig: ChartConfig =
+    statement === "incomestatement"
+      ? {
+          income: {
+            label: "Income",
+            color: "var(--chart-1)",
+          },
+          expense: {
+            label: "Expenses",
+            color: "var(--chart-2)",
+          },
+        }
+      : {
+          assets: {
+            label: "Assets",
+            color: "var(--chart-1)",
+          },
+          liabilities: {
+            label: "Liabilities",
+            color: "var(--chart-2)",
+          },
+        };
+
+  const keys = Object.keys(chartConfig); // ["income","expense"] or ["assets","liabilities"]
 
   return (
     <Card className="pt-0">
@@ -194,9 +240,9 @@ export function IncomeStatementBar({
                       style={{ backgroundColor: item.color }}
                     ></div>
                     <span className="flex gap-2 justify-between flex-1">
-                      {name}{" "}
+                      {chartConfig[name as keyof typeof chartConfig]?.label}{" "}
                       <span className="text-muted-foreground">
-                        {value.toLocaleString("en-US")}{" "}
+                        {Number(value).toLocaleString("en-US")}{" "}
                         {chartData[Math.ceil(chartData.length / 2)]?.currency ||
                           chartData[0]?.currency ||
                           ""}
@@ -205,8 +251,9 @@ export function IncomeStatementBar({
                   </div>
                 )}
               />
-              <Bar dataKey="income" fill="var(--color-income)" />
-              <Bar dataKey="expense" fill="var(--color-expense)" />
+              {keys.map((key) => (
+                <Bar key={key} dataKey={key} fill={chartConfig[key].color} />
+              ))}
               <Brush
                 dataKey="period"
                 height={10}

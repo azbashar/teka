@@ -13,6 +13,7 @@ import { formatLocalDate } from "@/lib/utils";
 import React, { useEffect, useState } from "react";
 import { DateRange } from "react-day-picker";
 import { Sankey, ResponsiveContainer } from "recharts";
+import { toast } from "sonner";
 
 type SankeyNode = { name: string };
 type SankeyLink = { source: number; target: number; value: number };
@@ -106,8 +107,21 @@ export default function SankeyChart() {
           : new Date()
       )}&depth=${depth == "full" ? "" : depth}`
     )
-      .then((res) => res.json())
-      .then(setData);
+      .then((res) => {
+        if (!res.ok) {
+          return res.text().then((body) => {
+            throw new Error(`(${res.status}) ${res.statusText} : ${body}}`);
+          });
+        }
+        return res.json();
+      })
+      .then(setData)
+      .catch((err) => {
+        toast.error(`Error fetching data: ${err.message}`);
+        console.error(
+          `Component: SankeyChart, Error fetching data: ${err.message}`
+        );
+      });
   }, [range, depth]);
 
   const CustomLink = (props: {

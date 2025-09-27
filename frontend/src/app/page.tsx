@@ -1,7 +1,7 @@
 "use client";
 import { BalanceCard } from "@/components/BalanceCard";
 import { DateRangePicker } from "@/components/DateRangePicker";
-import { IncomeStatementPieChart } from "@/components/IncomeStatementPieChart";
+import { StatementPieChart } from "@/components/StatementPieChart";
 import { NetWorthChart } from "@/components/NetWorthChart";
 import {
   Tooltip,
@@ -98,17 +98,19 @@ export default function Home() {
       <div className="flex flex-col gap-4">
         <NetWorthChart range={range} />
         <div className="grid lg:grid-cols-2 gap-4">
-          <IncomeStatementPieChart
+          <StatementPieChart
             range={range}
             title="Income"
             description="Your income distribution."
             rootAccount={config?.Accounts.IncomeAccount}
+            statement="incomestatement"
           />
-          <IncomeStatementPieChart
+          <StatementPieChart
             range={range}
             title="Expenses"
             description="Your expense distribution."
             rootAccount={config?.Accounts.ExpenseAccount}
+            statement="incomestatement"
           />
         </div>
       </div>

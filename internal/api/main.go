@@ -8,6 +8,7 @@ func InitAPI(file, mainFile string) {
 	fileArg = file
 	mainFileArg = mainFile
 	http.HandleFunc("/api/incomestatement/", getIncomeStatement)
+	http.HandleFunc("/api/balancesheet/", getBalanceSheet)
 	http.HandleFunc("/api/accountBalances/", accountBalances)
 	http.HandleFunc("/api/networth/", getNetWorth)
 	http.HandleFunc("/api/getConfig/", getConfig)
