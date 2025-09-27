@@ -1,4 +1,10 @@
-import { HomeIcon, Receipt, TableProperties, Wallet } from "lucide-react";
+import {
+  HomeIcon,
+  Network,
+  Receipt,
+  TableProperties,
+  Wallet,
+} from "lucide-react";
 
 import {
   Sidebar,
@@ -50,6 +56,14 @@ export function AppSidebar() {
               <Link href="/balancesheet">
                 <TableProperties />
                 <span>Balance Sheet</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <Link href="/sankey">
+                <Network />
+                <span>Sankey Chart</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

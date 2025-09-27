@@ -11,6 +11,7 @@ func InitAPI(file, mainFile string) {
 	http.HandleFunc("/api/accountBalances/", accountBalances)
 	http.HandleFunc("/api/networth/", getNetWorth)
 	http.HandleFunc("/api/getConfig/", getConfig)
+	http.HandleFunc("/api/sankey/", getSankeyData)
 }
 
 func enableCORS(w http.ResponseWriter, r *http.Request) {
