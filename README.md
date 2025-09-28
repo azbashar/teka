@@ -1,6 +1,3 @@
-> [!WARNING]
-> This project is still not at an usable stage.
-
 # Teka Finance
 
 Teka is a personal finance tracking app built on top of [hledger](https://hledger.org).  
