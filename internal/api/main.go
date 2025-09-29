@@ -12,6 +12,7 @@ func InitAPI(file, mainFile string) {
 	http.HandleFunc("/api/accountBalances/", accountBalances)
 	http.HandleFunc("/api/networth/", getNetWorth)
 	http.HandleFunc("/api/getConfig/", getConfig)
+	http.HandleFunc("/api/updateConfig/", updateConfig)
 	http.HandleFunc("/api/sankey/", getSankeyData)
 }
 

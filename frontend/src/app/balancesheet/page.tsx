@@ -10,7 +10,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useConfig } from "@/context/ConfigContext";
 import { usePageTitle } from "@/context/PageTitleContext";
 import { formatLocalDate } from "@/lib/utils";
-import { HelpCircle, ScaleIcon } from "lucide-react";
+import { ScaleIcon } from "lucide-react";
 import * as React from "react";
 import { DateRange } from "react-day-picker";
 

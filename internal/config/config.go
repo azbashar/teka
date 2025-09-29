@@ -9,14 +9,14 @@ import (
 )
 
 type Accounts struct {
-	ConversionAccount string `yaml:"conversion"`
-	FXGainAccount     string `yaml:"fx_gain"`
-	FXLossAccount     string `yaml:"fx_loss"`
-	AssetsAccount    string `yaml:"assets"`
+	ConversionAccount  string `yaml:"conversion"`
+	FXGainAccount      string `yaml:"fx_gain"`
+	FXLossAccount      string `yaml:"fx_loss"`
+	AssetsAccount      string `yaml:"assets"`
 	LiabilitiesAccount string `yaml:"liabilities"`
-	IncomeAccount    string `yaml:"income"`
-	ExpenseAccount   string `yaml:"expense"`
-	EquityAccount    string `yaml:"equity"`
+	IncomeAccount      string `yaml:"income"`
+	ExpenseAccount     string `yaml:"expense"`
+	EquityAccount      string `yaml:"equity"`
 }
 
 type EfficientFileStructure struct {
@@ -30,10 +30,13 @@ type StarredAccount struct {
 }
 
 type Config struct {
+	BaseCurrency           string                 `yaml:"base_currency"`
+	Locale                 string                 `yaml:"locale"`
 	AmountColumn           int                    `yaml:"amount_column"`
 	Accounts               Accounts               `yaml:"accounts"`
-	EfficientFileStructure EfficientFileStructure `yaml:"efficient_file_structure"`
 	StarredAccounts        []StarredAccount       `yaml:"starred_accounts"`
+	EfficientFileStructure EfficientFileStructure `yaml:"efficient_file_structure"`
+	ShowGetStarted         bool                   `yaml:"show_get_started_on_next_launch"`
 }
 
 var Cfg Config
@@ -59,25 +62,28 @@ func LoadConfig() error {
 		if os.IsNotExist(err) {
 			// create default config if it doesn't exist
 			Cfg = Config{
+				BaseCurrency: "USD",
+				Locale:       "en-US",
 				AmountColumn: 40,
 				Accounts: Accounts{
-					ConversionAccount: "equity:conversion",
-					FXGainAccount:     "income:fx gain",
-					FXLossAccount:     "expenses:fx loss",
-					AssetsAccount:    "assets",
+					ConversionAccount:  "equity:conversion",
+					FXGainAccount:      "income:fx gain",
+					FXLossAccount:      "expenses:fx loss",
+					AssetsAccount:      "assets",
 					LiabilitiesAccount: "liabilities",
-					IncomeAccount:    "income",
-					ExpenseAccount:   "expenses",
-					EquityAccount:    "equity",
-				},
-				EfficientFileStructure: EfficientFileStructure{
-					Enabled:   false,
-					FilesRoot: "~/finance/",
+					IncomeAccount:      "income",
+					ExpenseAccount:     "expenses",
+					EquityAccount:      "equity",
 				},
 				StarredAccounts: []StarredAccount{
 					{DisplayName: "Cash Wallet", Account: "assets:cash"},
 					{DisplayName: "Bank", Account: "assets:bank"},
 				},
+				EfficientFileStructure: EfficientFileStructure{
+					Enabled:   false,
+					FilesRoot: "~/finance/",
+				},
+				ShowGetStarted: true,
 			}
 			fmt.Println("No config file found.")
 			return SaveConfig(configFile)
