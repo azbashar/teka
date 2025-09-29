@@ -14,6 +14,7 @@ import { formatLocalDate } from "@/lib/utils";
 import { HelpCircle } from "lucide-react";
 import * as React from "react";
 import { DateRange } from "react-day-picker";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 // get account balances from api and show them as card
 async function getAccountBalances(date: string) {
@@ -74,25 +75,29 @@ export default function Home() {
             </Tooltip>
           </div>
         </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-          {accountBalances.map(
-            (account: {
-              id: string;
-              displayName: string;
-              account: string;
-              balance: string;
-              percentChange: string;
-            }) => (
-              <BalanceCard
-                accountName={account.displayName}
-                account={account.account}
-                balance={account.balance}
-                percentChange={account.percentChange}
-                key={account.id}
-              />
-            )
-          )}
-        </div>
+        <ScrollArea>
+          <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+            {accountBalances.map(
+              (account: {
+                id: string;
+                displayName: string;
+                account: string;
+                balance: string;
+                percentChange: string;
+              }) => (
+                <div className="min-w-[250px]" key={account.id}>
+                  <BalanceCard
+                    accountName={account.displayName}
+                    account={account.account}
+                    balance={account.balance}
+                    percentChange={account.percentChange}
+                  />
+                </div>
+              )
+            )}
+          </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
       </div>
       <div className="flex flex-col gap-4">
         <NetWorthChart range={range} />

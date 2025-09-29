@@ -18,21 +18,18 @@ import {
 } from "@/components/ui/sidebar";
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
+import { ANSILogo } from "./ANSILogo";
 
 export function AppSidebar() {
   return (
     <Sidebar variant="inset">
       <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <Link href="/" className="text-xl font-semibold">
-                <Wallet />
-                <span>Teka Finance</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <Link href="/" className="text-xl font-semibold ">
+          <div className="flex items-center gap-4 py-2">
+            <Wallet />
+            <ANSILogo className="max-w-20" />
+          </div>
+        </Link>
       </SidebarHeader>
       <Separator className="mb-2" />
       <SidebarContent>
