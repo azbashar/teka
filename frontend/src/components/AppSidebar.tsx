@@ -2,6 +2,7 @@ import {
   HomeIcon,
   Network,
   Receipt,
+  SettingsIcon,
   TableProperties,
   Wallet,
 } from "lucide-react";
@@ -9,6 +10,7 @@ import {
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -69,6 +71,19 @@ export function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
+      <Separator />
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <Link href="/configure">
+                <SettingsIcon />
+                <span>Configure</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }

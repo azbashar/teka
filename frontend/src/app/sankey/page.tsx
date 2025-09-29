@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tooltip } from "@/components/ui/tooltip";
+import { usePageTitle } from "@/context/PageTitleContext";
 import { formatLocalDate } from "@/lib/utils";
 import React, { useEffect, useState } from "react";
 import { DateRange } from "react-day-picker";
@@ -90,6 +91,10 @@ type CustomLinkPayload = {
 };
 
 export default function SankeyChart() {
+  const { setTitle } = usePageTitle();
+  React.useEffect(() => {
+    setTitle("Sankey Chart");
+  }, [setTitle]);
   const [data, setData] = useState<SankeyData | null>(null);
   const [range, setRange] = React.useState<DateRange | undefined>({
     from: new Date(new Date().setFullYear(new Date().getFullYear() - 1)),

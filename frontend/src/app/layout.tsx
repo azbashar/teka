@@ -29,6 +29,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <title>Teka Finance</title>
+      </head>
       <body
         className={`${akatab.variable} ${jetBrainsMono.variable} antialiased`}
       >

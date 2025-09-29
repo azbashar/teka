@@ -56,7 +56,6 @@ export default function Home() {
 
   return (
     <div>
-      <title>Dashboard</title>
       <div className="mb-4">
         <div className="flex flex-col sm:flex-row-reverse justify-between gap-4 sm:items-center mb-2">
           <DateRangePicker range={range} onChange={setRange} />

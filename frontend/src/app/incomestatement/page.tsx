@@ -81,7 +81,6 @@ export default function IncomeStatementPage() {
 
   return (
     <div>
-      <title>Income Statement</title>
       <div className="mb-4">
         <div className="flex flex-col sm:flex-row-reverse justify-between gap-4 sm:items-center mb-2">
           <DateRangePicker range={range} onChange={setRange} />
