@@ -9,6 +9,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/A-Bashar/Teka-Finance/internal/config"
 	"github.com/A-Bashar/Teka-Finance/internal/fileselector"
 )
 
@@ -59,7 +60,7 @@ func getBalanceSheet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if value == "then" || value == "now" || value == "end" {
-		cmdArgs = append(cmdArgs, "--value="+value)
+		cmdArgs = append(cmdArgs, "--value="+value+","+config.Cfg.BaseCurrency)
 	} else if value != "" {
 		http.Error(w, "Invalid value mode. Allowed options are then/now/end.", http.StatusBadRequest)
 		return
@@ -159,7 +160,7 @@ func getBalanceSheet(w http.ResponseWriter, r *http.Request) {
 
 			var data []map[string]any
 			totalAmount := 0.0
-			totalCurrency := "USD"
+			totalCurrency := config.Cfg.BaseCurrency
 
 			// walk through subreports -> prRows -> prrAmounts[i]
 			for _, sub := range cbrSubreports {
@@ -196,7 +197,7 @@ func getBalanceSheet(w http.ResponseWriter, r *http.Request) {
 						continue
 					}
 					amount := 0.0
-					currency := "USD"
+					currency := config.Cfg.BaseCurrency
 					if aq, ok := amtData["aquantity"].(map[string]any); ok {
 						amount, _ = aq["floatingPoint"].(float64)
 					}
@@ -204,7 +205,7 @@ func getBalanceSheet(w http.ResponseWriter, r *http.Request) {
 						currency = comm
 					}
 
-					if totalCurrency == "USD" {
+					if totalCurrency == config.Cfg.BaseCurrency {
 						totalCurrency = currency
 					}
 					totalAmount += amount

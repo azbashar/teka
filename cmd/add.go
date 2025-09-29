@@ -18,29 +18,29 @@ import (
 type LineType int
 
 const (
-    LineTransaction LineType = iota
-    LinePosting
-    LineComment
+	LineTransaction LineType = iota
+	LinePosting
+	LineComment
 )
 
 type Line struct {
-    Type    LineType
-    Date    string // for LineTransaction
-    Note    string // for LineTransaction
-    Account string // for LinePosting
-    Amount  string // for LinePosting
-    Text    string // for LineComment
-    Indent  bool   // true for ';', false for '#'
+	Type    LineType
+	Date    string // for LineTransaction
+	Note    string // for LineTransaction
+	Account string // for LinePosting
+	Amount  string // for LinePosting
+	Text    string // for LineComment
+	Indent  bool   // true for ';', false for '#'
 }
 
 type Transaction struct {
-    Lines []Line
+	Lines []Line
 }
 
 var currentFile string
 
 var addCmd = &cobra.Command{
-	Use: "add",
+	Use:   "add",
 	Short: "Add a new transaction to your ledger",
 	Run: func(cmd *cobra.Command, args []string) {
 		fileArg = rootCmd.Flag("file").Value.String()
@@ -49,30 +49,30 @@ var addCmd = &cobra.Command{
 		tx := Transaction{}
 
 		// Date
-		AskDate:
-			date := Ask("Date?")
-			if date == "" {
-				fmt.Println("Abort.")
-				return
-			}
-			
-			// Comment
-			if date == ";" || date == "#" {
-				comment := Ask("Comment?")
-				tx.Lines = append(tx.Lines, Line {
-					Type:   LineComment,
-					Text:   comment,
-					Indent: false,
-				})
-				goto AskDate
-			}
+	AskDate:
+		date := Ask("Date?")
+		if date == "" {
+			fmt.Println("Abort.")
+			return
+		}
 
-			// Parse date shortcuts
-			date, err := ParseDate(date)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
+		// Comment
+		if date == ";" || date == "#" {
+			comment := Ask("Comment?")
+			tx.Lines = append(tx.Lines, Line{
+				Type:   LineComment,
+				Text:   comment,
+				Indent: false,
+			})
+			goto AskDate
+		}
+
+		// Parse date shortcuts
+		date, err := ParseDate(date)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 
 		currentFile, err = fileselector.GetCurrentFile(date, fileArg)
 		if err != nil {
@@ -81,34 +81,34 @@ var addCmd = &cobra.Command{
 		}
 
 		// Note
-		AskNote:
-			note := Ask("Note?")
+	AskNote:
+		note := Ask("Note?")
 
-			// Note search
-			if strings.HasPrefix(note, ".") {
-				var searchTerm string
-				if note == "." {
-					searchTerm = ""
-				} else {
-					searchTerm = note[1:]
-				}
-				selected, err := SearchRecords("notes",searchTerm)
-				if err != nil {
-					fmt.Println("Error searching notes:", err)
-					goto AskNote
-				}
-				if selected == "" {
-					goto AskNote
-				}
-				note = selected
+		// Note search
+		if strings.HasPrefix(note, ".") {
+			var searchTerm string
+			if note == "." {
+				searchTerm = ""
+			} else {
+				searchTerm = note[1:]
 			}
+			selected, err := SearchRecords("notes", searchTerm)
+			if err != nil {
+				fmt.Println("Error searching notes:", err)
+				goto AskNote
+			}
+			if selected == "" {
+				goto AskNote
+			}
+			note = selected
+		}
 
-		tx.Lines = append(tx.Lines, Line {
+		tx.Lines = append(tx.Lines, Line{
 			Type: LineTransaction,
 			Date: date,
 			Note: note,
 		})
-		
+
 		// Postings
 		for {
 			// Account
@@ -125,7 +125,7 @@ var addCmd = &cobra.Command{
 				} else {
 					searchTerm = account[1:]
 				}
-				selected, err := SearchRecords("accounts",searchTerm)
+				selected, err := SearchRecords("accounts", searchTerm)
 				if err != nil {
 					fmt.Println("Error searching accounts:", err)
 					continue
@@ -137,7 +137,7 @@ var addCmd = &cobra.Command{
 			}
 
 			// Check if converting currencies
-			if strings.HasPrefix(account,"$") {
+			if strings.HasPrefix(account, "$") {
 				err := convertCurrencies(&tx, account)
 				if err != nil {
 					fmt.Println("Can not calculate gain:", err, "\nTry adding the transacion manually.")
@@ -149,7 +149,7 @@ var addCmd = &cobra.Command{
 			// Comment
 			if account == ";" || account == "#" {
 				comment := Ask("Comment?")
-				tx.Lines = append(tx.Lines, Line {
+				tx.Lines = append(tx.Lines, Line{
 					Type:   LineComment,
 					Text:   comment,
 					Indent: account == ";",
@@ -158,19 +158,19 @@ var addCmd = &cobra.Command{
 			}
 
 			// Amount
-			AskAmount:
-				amount := Ask("Amount?")
-				// Auto balance
-				if amount == "." {
-					bal, err := calculateBalanceAmount(&tx)
-					if err != nil {
-						fmt.Println("Error balancing transaction:", err)
-						goto AskAmount
-					}
-					amount = bal
+		AskAmount:
+			amount := Ask("Amount?")
+			// Auto balance
+			if amount == "." {
+				bal, err := calculateBalanceAmount(&tx)
+				if err != nil {
+					fmt.Println("Error balancing transaction:", err)
+					goto AskAmount
 				}
-			
-			tx.Lines = append(tx.Lines, Line {
+				amount = bal
+			}
+
+			tx.Lines = append(tx.Lines, Line{
 				Type:    LinePosting,
 				Account: account,
 				Amount:  amount,
@@ -181,26 +181,26 @@ var addCmd = &cobra.Command{
 		content := "\n"
 		for _, line := range tx.Lines {
 			switch line.Type {
-				case LineComment:
-					if line.Indent {
-						content += "    " + line.Text + "\n"
-					} else {
-						content += line.Text + "\n"
-					}
-				case LineTransaction:
-					content += fmt.Sprintf("%s %s\n", line.Date, line.Note)
-				case LinePosting:
-					// negative amounts will align with the posetive amounts
-					column := config.Cfg.AmountColumn
-					if strings.HasPrefix(line.Amount, "-") {
-						column = config.Cfg.AmountColumn - 1
-					}
-					content += fmt.Sprintf(
-						"    %-*s %s\n",
-						column,
-						line.Account, 
-						line.Amount,
-					)
+			case LineComment:
+				if line.Indent {
+					content += "    " + line.Text + "\n"
+				} else {
+					content += line.Text + "\n"
+				}
+			case LineTransaction:
+				content += fmt.Sprintf("%s %s\n", line.Date, line.Note)
+			case LinePosting:
+				// negative amounts will align with the posetive amounts
+				column := config.Cfg.AmountColumn
+				if strings.HasPrefix(line.Amount, "-") {
+					column = config.Cfg.AmountColumn - 1
+				}
+				content += fmt.Sprintf(
+					"    %-*s %s\n",
+					column,
+					line.Account,
+					line.Amount,
+				)
 			}
 		}
 
@@ -220,7 +220,6 @@ var addCmd = &cobra.Command{
 		if err == nil {
 			prevSize = info.Size()
 		}
-
 
 		// Save transaction to file
 		f, err := os.OpenFile(currentFile, os.O_APPEND|os.O_WRONLY, 0644)
@@ -304,7 +303,7 @@ func ParseDate(input string) (string, error) {
 }
 
 func SearchRecords(mode, searchTerm string) (string, error) {
-	mainFile, err := fileselector.GetMainFile(fileArg,mainFileArg)
+	mainFile, err := fileselector.GetMainFile(fileArg, mainFileArg)
 	if err != nil {
 		return "", err
 	}
@@ -331,96 +330,96 @@ func SearchRecords(mode, searchTerm string) (string, error) {
 
 	// Ask user to choose
 	reader := bufio.NewReader(os.Stdin)
-    fmt.Print("Select " + strings.TrimSuffix(mode, "s") + " (type index or full name): ")
-    choice, _ := reader.ReadString('\n')
-    choice = strings.TrimSpace(choice)
+	fmt.Print("Select " + strings.TrimSuffix(mode, "s") + " (type index or full name): ")
+	choice, _ := reader.ReadString('\n')
+	choice = strings.TrimSpace(choice)
 
-    // Try parsing as index
-    num, err := strconv.Atoi(choice)
-    if err == nil {
-        if num >= 1 && num <= len(results) {
-            return strings.TrimSpace(results[num-1]), nil
-        }
-    }
+	// Try parsing as index
+	num, err := strconv.Atoi(choice)
+	if err == nil {
+		if num >= 1 && num <= len(results) {
+			return strings.TrimSpace(results[num-1]), nil
+		}
+	}
 
-    // Otherwise use input as account name
-    return choice, nil
+	// Otherwise use input as account name
+	return choice, nil
 }
 
 // creates postings for currency conversion transactions
 func convertCurrencies(tx *Transaction, foreignAccount string) error {
 	foreignAccount = strings.TrimPrefix(foreignAccount, "$")
-	AskForeignAmount:
-		foreignAmount := Ask("Amount?")
-		foreignAmountValue,err := strconv.ParseFloat(strings.Split(foreignAmount, " ")[0], 64)
-		if err != nil {
-			fmt.Println("Invalid amount: ", err)
-			goto AskForeignAmount
-		}
-		foreignCurrency := strings.Split(foreignAmount, " ")[1]
+AskForeignAmount:
+	foreignAmount := Ask("Amount?")
+	foreignAmountValue, err := strconv.ParseFloat(strings.Split(foreignAmount, " ")[0], 64)
+	if err != nil {
+		fmt.Println("Invalid amount: ", err)
+		goto AskForeignAmount
+	}
+	foreignCurrency := strings.Split(foreignAmount, " ")[1]
 
-	AskLocalAccount:
-		localAccount := Ask("Account?")
-		if localAccount == "" {
-			fmt.Println("Local account must be specified when converting currencies.")
+AskLocalAccount:
+	localAccount := Ask("Account?")
+	if localAccount == "" {
+		fmt.Println("Local account must be specified when converting currencies.")
+		goto AskLocalAccount
+	}
+	// Account search
+	if strings.HasPrefix(localAccount, ".") {
+		var searchTerm string
+		if localAccount == "." {
+			searchTerm = ""
+		} else {
+			searchTerm = localAccount[1:]
+		}
+		selected, err := SearchRecords("accounts", searchTerm)
+		if err != nil {
+			fmt.Println("Error searching accounts:", err)
 			goto AskLocalAccount
 		}
-		// Account search
-		if strings.HasPrefix(localAccount, ".") {
-			var searchTerm string
-			if localAccount == "." {
-				searchTerm = ""
-			} else {
-				searchTerm = localAccount[1:]
-			}
-			selected, err := SearchRecords("accounts",searchTerm)
-			if err != nil {
-				fmt.Println("Error searching accounts:", err)
-				goto AskLocalAccount
-			}
-			if selected == "" {
-				goto AskLocalAccount
-			}
-			localAccount = selected
-		}
-		// Comment
-		if localAccount == ";" || localAccount == "#" {
-			comment := Ask("Comment?")
-			tx.Lines = append(tx.Lines, Line {
-				Type:   LineComment,
-				Text:   comment,
-				Indent: localAccount == ";",
-			})
+		if selected == "" {
 			goto AskLocalAccount
 		}
+		localAccount = selected
+	}
+	// Comment
+	if localAccount == ";" || localAccount == "#" {
+		comment := Ask("Comment?")
+		tx.Lines = append(tx.Lines, Line{
+			Type:   LineComment,
+			Text:   comment,
+			Indent: localAccount == ";",
+		})
+		goto AskLocalAccount
+	}
 
-	AskLocalAmount:
-		localAmount := Ask("Amount?")
-		localAmountValue,err := strconv.ParseFloat(strings.Split(localAmount, " ")[0], 64)
-		if err != nil {
-			fmt.Println("Invalid amount:", err)
-			goto AskLocalAmount
-		}
-		localCurrency := strings.Split(localAmount, " ")[1]
-	
+AskLocalAmount:
+	localAmount := Ask("Amount?")
+	localAmountValue, err := strconv.ParseFloat(strings.Split(localAmount, " ")[0], 64)
+	if err != nil {
+		fmt.Println("Invalid amount:", err)
+		goto AskLocalAmount
+	}
+	localCurrency := strings.Split(localAmount, " ")[1]
+
 	// Local to foreign conversion
 	if foreignAmountValue >= 0 {
-		tx.Lines = append(tx.Lines, Line {
+		tx.Lines = append(tx.Lines, Line{
 			Type:    LinePosting,
 			Account: foreignAccount,
 			Amount:  fmt.Sprintf("%s @@ %g %s", foreignAmount, localAmountValue*(-1), localCurrency),
 		})
-		tx.Lines = append(tx.Lines, Line {
+		tx.Lines = append(tx.Lines, Line{
 			Type:    LinePosting,
 			Account: localAccount,
 			Amount:  localAmount,
 		})
-		tx.Lines = append(tx.Lines, Line {
+		tx.Lines = append(tx.Lines, Line{
 			Type:    LinePosting,
 			Account: config.Cfg.Accounts.ConversionAccount,
 			Amount:  fmt.Sprintf("%g %s", foreignAmountValue*(-1), foreignCurrency),
 		})
-		tx.Lines = append(tx.Lines, Line {
+		tx.Lines = append(tx.Lines, Line{
 			Type:    LinePosting,
 			Account: config.Cfg.Accounts.ConversionAccount,
 			Amount:  fmt.Sprintf("%g %s", localAmountValue*(-1), localCurrency),
@@ -477,7 +476,7 @@ func convertCurrencies(tx *Transaction, foreignAccount string) error {
 }
 
 func getForeignBalance(account string) (float64, float64, error) {
-	mainFile, err := fileselector.GetMainFile(fileArg,mainFileArg)
+	mainFile, err := fileselector.GetMainFile(fileArg, mainFileArg)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -495,12 +494,12 @@ func getForeignBalance(account string) (float64, float64, error) {
 		balance, _ = strconv.ParseFloat(balFields[0], 64)
 	} else {
 		fmt.Println(account, "has no balance.")
-		return 0,0,errors.New("can not calculate gain from zero balance")
+		return 0, 0, errors.New("can not calculate gain from zero balance")
 	}
 
 	// get value of foreign balance in local currency
 	// hledger bal account --file file --value=then --cost
-	valCmd := exec.Command("hledger", "bal", account, "-f", mainFile, "--no-total", "--value=then", "--cost")
+	valCmd := exec.Command("hledger", "bal", account, "-f", mainFile, "--no-total", "--value=then,"+config.Cfg.BaseCurrency, "--cost")
 	valOut, err := valCmd.Output()
 	if err != nil {
 		return balance, 0, err
@@ -546,8 +545,6 @@ func calculateBalanceAmount(tx *Transaction) (string, error) {
 	}
 	return fmt.Sprintf("%g %s", -total, currency), nil
 }
-
-
 
 func init() {
 	rootCmd.AddCommand(addCmd)

@@ -61,10 +61,13 @@ function transformToChartData(
 ): ChartDataItem[] {
   return rawData.map((period) => {
     const base = {
-      period: `${new Date(period.dates.from).toLocaleDateString("en-US", {
-        month: "short",
-        year: "2-digit",
-      })}`,
+      period: `${new Date(period.dates.from).toLocaleDateString(
+        config?.Locale,
+        {
+          month: "short",
+          year: "2-digit",
+        }
+      )}`,
     };
 
     if (statement === "incomestatement") {
@@ -218,7 +221,7 @@ export function StatementBar({
                 tickLine={false}
                 tickMargin={8}
                 tickFormatter={(value: number) =>
-                  `${value.toLocaleString("en-US", {
+                  `${value.toLocaleString(config?.Locale, {
                     maximumFractionDigits: 1,
                     notation: "compact",
                     compactDisplay: "short",
@@ -242,7 +245,7 @@ export function StatementBar({
                     <span className="flex gap-2 justify-between flex-1">
                       {chartConfig[name as keyof typeof chartConfig]?.label}{" "}
                       <span className="text-muted-foreground">
-                        {Number(value).toLocaleString("en-US")}{" "}
+                        {Number(value).toLocaleString(config?.Locale)}{" "}
                         {chartData[Math.ceil(chartData.length / 2)]?.currency ||
                           chartData[0]?.currency ||
                           ""}

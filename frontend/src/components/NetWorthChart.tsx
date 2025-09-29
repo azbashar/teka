@@ -20,7 +20,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { formatLocalDate } from "@/lib/utils";
-import { Separator } from "./ui/separator";
+import { useConfig } from "@/context/ConfigContext";
 
 type NetWorthData = { date: string; networth: number; currency: string };
 
@@ -48,6 +48,7 @@ type NetWorthChartProps = {
 };
 
 export function NetWorthChart({ range }: NetWorthChartProps) {
+  const config = useConfig();
   const [chartData, setChartData] = React.useState<NetWorthData[]>([]);
 
   React.useEffect(() => {
@@ -73,7 +74,9 @@ export function NetWorthChart({ range }: NetWorthChartProps) {
         <div className="border-l-2 pl-4 ">
           <p className="text-muted-foreground text-sm">Final Networth</p>
           <p className="font-black text-2xl text-right">
-            {chartData[chartData.length - 1]?.networth.toLocaleString("en-US")}{" "}
+            {chartData[chartData.length - 1]?.networth.toLocaleString(
+              config?.Locale
+            )}{" "}
             {chartData[0]?.currency}
           </p>
         </div>
@@ -107,7 +110,7 @@ export function NetWorthChart({ range }: NetWorthChartProps) {
               minTickGap={32}
               tickFormatter={(value) => {
                 const date = new Date(value);
-                return date.toLocaleDateString("en-US", {
+                return date.toLocaleDateString(config?.Locale, {
                   month: "short",
                   day: "numeric",
                   year: "2-digit",
@@ -119,7 +122,7 @@ export function NetWorthChart({ range }: NetWorthChartProps) {
               tickLine={false}
               tickMargin={8}
               tickFormatter={(value: number) =>
-                `${value.toLocaleString("en-US", {
+                `${value.toLocaleString(config?.Locale, {
                   maximumFractionDigits: 1,
                   notation: "compact",
                   compactDisplay: "short",
@@ -136,14 +139,14 @@ export function NetWorthChart({ range }: NetWorthChartProps) {
               content={
                 <ChartTooltipContent
                   labelFormatter={(value) => {
-                    return new Date(value).toLocaleDateString("en-US", {
+                    return new Date(value).toLocaleDateString(config?.Locale, {
                       month: "short",
                       day: "numeric",
                       year: "numeric",
                     });
                   }}
                   formatter={(value) =>
-                    `${value.toLocaleString("en-US")} ${
+                    `${value.toLocaleString(config?.Locale)} ${
                       chartData[Math.ceil(chartData.length / 2)]?.currency ||
                       chartData[0]?.currency ||
                       ""

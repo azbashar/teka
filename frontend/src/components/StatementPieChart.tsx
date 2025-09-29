@@ -77,7 +77,7 @@ export function StatementPieChart({
   const [chartConfig, setChartConfig] = React.useState<ChartConfig>({});
   const [total, setTotal] = React.useState<Total>({
     amount: 0,
-    currency: "USD",
+    currency: config?.BaseCurrency ?? "USD",
   });
   const [noData, setNoData] = React.useState(false);
   const [account, setAccount] = React.useState<string[]>([rootAccount ?? ""]);
@@ -216,7 +216,7 @@ export function StatementPieChart({
                           <span className="flex gap-2 justify-between flex-1">
                             {name}{" "}
                             <span className="text-muted-foreground">
-                              {value.toLocaleString("en-US")}{" "}
+                              {value.toLocaleString(config?.Locale)}{" "}
                               {chartData[Math.ceil(chartData.length / 2)]
                                 ?.currency ||
                                 chartData[0]?.currency ||
@@ -259,7 +259,7 @@ export function StatementPieChart({
                                   y={viewBox.cy}
                                   className="fill-foreground text-3xl font-bold"
                                 >
-                                  {total.amount.toLocaleString("en-US", {
+                                  {total.amount.toLocaleString(config?.Locale, {
                                     maximumFractionDigits: 1,
                                     notation: "compact",
                                     compactDisplay: "short",
@@ -300,7 +300,7 @@ export function StatementPieChart({
                       content={<ChartTooltipContent />}
                       formatter={(value) => (
                         <span className="text-muted-foreground">
-                          {value.toLocaleString("en-US")}{" "}
+                          {value.toLocaleString(config?.Locale)}{" "}
                           {chartData[Math.ceil(chartData.length / 2)]
                             ?.currency ||
                             chartData[0]?.currency ||
@@ -323,7 +323,7 @@ export function StatementPieChart({
                       axisLine={false}
                       tickMargin={8}
                       tickFormatter={(value: number) =>
-                        `${value.toLocaleString("en-US", {
+                        `${value.toLocaleString(config?.Locale, {
                           maximumFractionDigits: 1,
                           notation: "compact",
                           compactDisplay: "short",

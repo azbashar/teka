@@ -110,10 +110,13 @@ export function StatementStackedBar({
 
           const transformed = data.map((period) => {
             const base: Record<string, number | string> = {
-              period: new Date(period.dates.from).toLocaleDateString("en-US", {
-                month: "short",
-                year: "2-digit",
-              }),
+              period: new Date(period.dates.from).toLocaleDateString(
+                config?.Locale,
+                {
+                  month: "short",
+                  year: "2-digit",
+                }
+              ),
             };
             allAccounts.forEach((account) => {
               const item = period.data.find((d) => d.account === account);
@@ -193,7 +196,7 @@ export function StatementStackedBar({
                 tickLine={false}
                 tickMargin={8}
                 tickFormatter={(value: number) =>
-                  `${value.toLocaleString("en-US", {
+                  `${value.toLocaleString(config?.Locale, {
                     maximumFractionDigits: 1,
                     notation: "compact",
                   })} ${currency}`
@@ -212,7 +215,7 @@ export function StatementStackedBar({
                     <span className="flex gap-2 justify-between flex-1">
                       {name}{" "}
                       <span className="text-muted-foreground">
-                        {value.toLocaleString("en-US")} {currency}
+                        {value.toLocaleString(config?.Locale)} {currency}
                       </span>
                     </span>
                   </div>

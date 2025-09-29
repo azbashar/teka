@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/A-Bashar/Teka-Finance/internal/config"
 	"github.com/A-Bashar/Teka-Finance/internal/fileselector"
 )
 
@@ -28,8 +29,8 @@ func getNetWorth(w http.ResponseWriter, r *http.Request) {
 
 	// Prepare hledger command: use balance sheet
 	cmdArgs := []string{
-		"bs",        // balance sheet
-		"-V",        // value in default currency
+		"bs",      // balance sheet
+		"-V",      // value in default currency
 		"--daily", // daily snapshot
 		"-O", "json",
 	}
@@ -139,7 +140,8 @@ func getNetWorth(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		assetVal, currency := 0.0, "USD"
+		assetVal, currency := 0.0, config.Cfg.BaseCurrency
+
 		if i < len(assetsTotals) && assetsTotals[i] != nil {
 			aquantity, ok := assetsTotals[i]["aquantity"].(map[string]interface{})
 			if ok {

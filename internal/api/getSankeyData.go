@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/A-Bashar/Teka-Finance/internal/config"
 	"github.com/A-Bashar/Teka-Finance/internal/fileselector"
 )
 
@@ -85,7 +86,7 @@ func getSankeyData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// ----- HLedger Income/Expense -----
-	isArgs := []string{"is", "-O", "json", "--value=then"}
+	isArgs := []string{"is", "-O", "json", "--value=then," + config.Cfg.BaseCurrency, "--cost", "expr: not tag:clopen"}
 	if depthStr != "" {
 		isArgs = append(isArgs, fmt.Sprintf("--depth=%s", depthStr))
 	}
@@ -116,7 +117,7 @@ func getSankeyData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// ----- HLedger Balance Sheet -----
-	bsArgs := []string{"bs", "--change", "-O", "json", "--value=then", "--cost", "expr: not tag:clopen"}
+	bsArgs := []string{"bs", "--change", "-O", "json", "--value=then," + config.Cfg.BaseCurrency, "--cost", "expr: not tag:clopen"}
 	if depthStr != "" {
 		bsArgs = append(bsArgs, fmt.Sprintf("--depth=%s", depthStr))
 	}

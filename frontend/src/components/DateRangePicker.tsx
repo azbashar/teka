@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon } from "lucide-react";
+import { useConfig } from "@/context/ConfigContext";
 
 type DateRangePickerProps = {
   range: DateRange | undefined;
@@ -17,17 +18,18 @@ type DateRangePickerProps = {
 };
 
 export function DateRangePicker({ range, onChange }: DateRangePickerProps) {
+  const config = useConfig();
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="outline">
           <CalendarIcon className="mr-2" />
           {range?.from && range?.to
-            ? `${range.from.toLocaleDateString("en-US", {
+            ? `${range.from.toLocaleDateString(config?.Locale, {
                 month: "short",
                 day: "numeric",
                 year: "numeric",
-              })} - ${range.to.toLocaleDateString("en-US", {
+              })} - ${range.to.toLocaleDateString(config?.Locale, {
                 month: "short",
                 day: "numeric",
                 year: "numeric",
