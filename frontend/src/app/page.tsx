@@ -85,7 +85,7 @@ export default function Home() {
                 balance: string;
                 percentChange: string;
               }) => (
-                <div className="min-w-[250px]" key={account.id}>
+                <div className="min-w-[250px] sm:min-w-full" key={account.id}>
                   <BalanceCard
                     accountName={account.displayName}
                     account={account.account}
