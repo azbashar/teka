@@ -2,6 +2,7 @@ import {
   HomeIcon,
   Network,
   Receipt,
+  ScrollText,
   SettingsIcon,
   TableProperties,
   Wallet,
@@ -39,6 +40,14 @@ export function AppSidebar() {
               <Link href="/">
                 <HomeIcon />
                 <span>Home</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <Link href="/transactions">
+                <ScrollText />
+                <span>Transactions</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
