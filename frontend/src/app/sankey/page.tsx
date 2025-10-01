@@ -212,8 +212,8 @@ export default function SankeyChart() {
             <h2 className="font-semibold text-xl">Sankey Chart</h2>
           </div>
         </div>
-        <div className="flex h-[calc(100vh-8rem))] w-full items-center justify-center  border rounded p-4 bg-sidebar relative">
-          <div className="absolute z-50 bg-sidebar rounded-sm top-4 left-4">
+        <div className="flex h-[calc(100vh-8rem))] w-full items-center justify-center  border rounded p-4 bg-card relative">
+          <div className="absolute z-50 bg-card rounded-sm top-4 left-4">
             <Select onValueChange={(value) => setDepth(value)} value={depth}>
               <SelectTrigger>
                 Depth: <SelectValue />
@@ -243,8 +243,8 @@ export default function SankeyChart() {
         </div>
       </div>
       <div className="flex w-full">
-        <ScrollArea className="w-1 h-[calc(100vh-8rem)] border rounded p-4 bg-sidebar flex-1 relative">
-          <div className="absolute z-50 bg-sidebar rounded-sm">
+        <ScrollArea className="w-1 h-[calc(100vh-8rem)] border rounded-xl p-4 bg-card flex-1 relative">
+          <div className="absolute z-50 bg-card rounded-sm">
             <Select onValueChange={(value) => setDepth(value)} value={depth}>
               <SelectTrigger>
                 Depth: <SelectValue />

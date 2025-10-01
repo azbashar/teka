@@ -36,11 +36,15 @@ async function getIncomeStatement(
     data +
     `</div> <style> 
   	.incomestatementdata tr:nth-child(2n+1) td {
-    	background-color: var(--color-table-odd-row) !important;
+    	background-color: var(--color-muted) !important;
 	}
 	.incomestatementdata tr:has(.coltotal) > td {
   		border-top: double var(--color-foreground) !important;
 	}
+      .incomestatementdata td {
+      padding-left: 1rem;
+      padding-right: 1rem;
+      }
 	</style>`;
   return data;
 }
@@ -128,8 +132,11 @@ export default function IncomeStatementPage() {
           </Toggle>
         </div>
         <div className="flex">
-          <ScrollArea className="w-1 border rounded p-4 bg-sidebar flex-1">
-            <div dangerouslySetInnerHTML={{ __html: incomeStatementHTML }} />
+          <ScrollArea className="w-1 border rounded p-4 bg-card flex-1">
+            <div
+              className="w-max"
+              dangerouslySetInnerHTML={{ __html: incomeStatementHTML }}
+            />
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
         </div>

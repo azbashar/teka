@@ -12,7 +12,7 @@ export default function ConfigPage() {
     <>
       <div className="w-full h-full flex justify-center items-center">
         <div className="w-full max-w-[700px] flex flex-col justify-center items-center gap-8">
-          <div className="border rounded p-4 bg-sidebar mt-4 w-full">
+          <div className="border rounded-md p-4 bg-card mt-4 w-full">
             <h1 className="text-center text-xl font-semibold mb-4">
               Configuration
             </h1>

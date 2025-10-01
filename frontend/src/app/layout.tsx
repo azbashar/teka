@@ -1,5 +1,5 @@
 "use client";
-import { Akatab, JetBrains_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, Lora, IBM_Plex_Mono } from "next/font/google";
 import "@/app/globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ConfigProvider, useConfig } from "@/context/ConfigContext";
@@ -11,15 +11,20 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { ConfigForm } from "@/components/ConfigForm";
 import { ANSILogo } from "@/components/ANSILogo";
 
-const jetBrainsMono = JetBrains_Mono({
-  variable: "--font-mono",
+const plusJakartaSans = Plus_Jakarta_Sans({
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 
-const akatab = Akatab({
-  weight: "600",
-  variable: "--font-sans",
+const lora = Lora({
+  variable: "--font-serif",
   subsets: ["latin"],
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  weight: "400",
 });
 
 export default function RootLayout({
@@ -33,7 +38,7 @@ export default function RootLayout({
         <title>Teka Finance</title>
       </head>
       <body
-        className={`${akatab.variable} ${jetBrainsMono.variable} antialiased`}
+        className={`${plusJakartaSans.variable} ${lora.variable} ${ibmPlexMono.variable} antialiased`}
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <ConfigProvider>
@@ -55,7 +60,7 @@ const ConfigConsumer = ({ children }: { children: React.ReactNode }) => {
           <main className="w-full h-full">
             <div className="w-full h-full flex justify-center items-center py-16">
               <div className="w-full max-w-[500px] flex flex-col justify-center items-center gap-8">
-                <ANSILogo className="text-chart-2 max-w-[400px] px-16 min-w-80" />
+                <ANSILogo className="text-chart-1 max-w-[400px] px-16 min-w-80" />
                 <div className="flex flex-col gap-2 max-w-[400px]">
                   <p className="text-center">Welcome to Teka!</p>
                   <p className="text-center text-muted-foreground">
@@ -63,7 +68,7 @@ const ConfigConsumer = ({ children }: { children: React.ReactNode }) => {
                     that Teka can properly read your journals.
                   </p>
                 </div>
-                <div className="border rounded p-4 bg-sidebar mt-4 w-full">
+                <div className="border rounded-md p-4 bg-card mt-4 w-full">
                   <h1 className="text-center text-xl font-semibold mb-4">
                     Configuration
                   </h1>

@@ -148,7 +148,7 @@ function TransactionItem({ transaction }: { transaction: Transaction }) {
   });
 
   return (
-    <div className="border rounded px-4 py-2 mb-3">
+    <div className="border rounded-md px-4 py-2 mb-3">
       <div className="flex flex-col lg:flex-row gap-2 lg:gap-4 py-2">
         <div className="w-64 text-muted-foreground text-sm">
           {new Date(transaction.date).toLocaleDateString(config?.Locale, {

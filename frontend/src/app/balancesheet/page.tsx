@@ -36,11 +36,15 @@ async function getBalanceSheet(
     data +
     `</div> <style> 
   	.balancesheetdata tr:nth-child(2n+1) td {
-    	background-color: var(--color-table-odd-row) !important;
+    	background-color: var(--color-muted) !important;
 	}
 	.balancesheetdata tr:has(.coltotal) > td {
   		border-top: double var(--color-foreground) !important;
 	}
+      .balancesheetdata td {
+      padding-left: 1rem;
+      padding-right: 1rem;
+      }
 	</style>`;
   return data;
 }
@@ -128,8 +132,11 @@ export default function IncomeStatementPage() {
           </Toggle>
         </div>
         <div className="flex">
-          <ScrollArea className="w-1 border rounded p-4 bg-sidebar flex-1">
-            <div dangerouslySetInnerHTML={{ __html: BalanceSheetHTML }} />
+          <ScrollArea className="w-1 border rounded p-4 bg-card flex-1">
+            <div
+              className="w-max"
+              dangerouslySetInnerHTML={{ __html: BalanceSheetHTML }}
+            />
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
         </div>

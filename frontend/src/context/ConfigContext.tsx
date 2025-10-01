@@ -91,7 +91,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
   if (loading) {
     return (
       <div className="w-screen h-screen flex flex-col items-center justify-center gap-8">
-        <ANSILogo className="text-chart-2 max-w-[400px] px-16 min-w-80" />
+        <ANSILogo className="text-chart-1 max-w-[400px] px-16 min-w-80" />
 
         <p className="whitespace-pre-line text-center px-4">{status}</p>
       </div>
