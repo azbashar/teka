@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/A-Bashar/Teka-Finance/cmd"
-	"github.com/A-Bashar/Teka-Finance/internal/config"
+	"github.com/azbashar/teka/cmd"
+	"github.com/azbashar/teka/internal/config"
 )
 
 func main() {

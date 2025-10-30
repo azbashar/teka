@@ -5,8 +5,8 @@ import (
 	"io/fs"
 	"net/http"
 
-	"github.com/A-Bashar/Teka-Finance/frontend"
-	"github.com/A-Bashar/Teka-Finance/internal/api"
+	"github.com/azbashar/teka/frontend"
+	"github.com/azbashar/teka/internal/api"
 	"github.com/spf13/cobra"
 )
 

@@ -1,4 +1,4 @@
-module github.com/A-Bashar/Teka-Finance
+module github.com/azbashar/teka
 
 go 1.25.0
 

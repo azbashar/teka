@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/A-Bashar/Teka-Finance/internal/config"
+	"github.com/azbashar/teka/internal/config"
 )
 
 func GetRootDir() string {

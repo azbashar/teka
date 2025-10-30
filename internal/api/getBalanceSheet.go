@@ -9,8 +9,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/A-Bashar/Teka-Finance/internal/config"
-	"github.com/A-Bashar/Teka-Finance/internal/fileselector"
+	"github.com/azbashar/teka/internal/config"
+	"github.com/azbashar/teka/internal/fileselector"
 )
 
 func getBalanceSheet(w http.ResponseWriter, r *http.Request) {

@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/A-Bashar/Teka-Finance/internal/config"
+	"github.com/azbashar/teka/internal/config"
 	"github.com/spf13/cobra"
 )
 

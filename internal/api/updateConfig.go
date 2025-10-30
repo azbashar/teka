@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"reflect"
 
-	"github.com/A-Bashar/Teka-Finance/internal/config"
+	"github.com/azbashar/teka/internal/config"
 )
 
 func updateConfig(w http.ResponseWriter, r *http.Request) {
